@@ -1,3 +1,3 @@
 [workspace]
-members = ["weaven-core", "weaven-bevy", "weaven-wasm", "weaven-debugger-core", "weaven-debugger/src-tauri"]
+members = ["weaven-core", "weaven-bevy", "weaven-wasm", "weaven-unity", "weaven-debugger-core", "weaven-debugger/src-tauri"]
 resolver = "2"

@@ -81,14 +81,13 @@ cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
 - Phase 4: WASM + Browser Adapter ✅
 - §11 全 Open Items (11.1〜11.7) ✅
 - デバッガーツール (Tauri + React) ✅
+- Phase 5: Unity Adapter ✅
+  - `weaven-unity/` Rust FFI クレート（C ABI, cdylib）— 13テスト
+  - `generated/cs/` oxidtr C# 型定義（Models.cs, Validators.cs）
+  - `WeavenNative.cs` P/Invoke 宣言（iOS __Internal / その他 weaven_unity）
+  - `WeavenWorld.cs` 高レベル C# Adapter（IDisposable, TickResult JSON パース）
 
 ### 次のフェーズ候補
-- **Phase 5: Unity Adapter** — oxidtr C# backend 完成が prerequisite
-  - `weaven-unity/` を作成
-  - oxidtr `generate --target cs` でC#型を生成
-  - C# Adapter 実装（`WeavenWorld.cs`, tick system, port bridge）
-  - Unity native plugin build（C ABI経由）
-
 - **Phase 6: Network APIs** — State Diff, Snapshot/Restore, Input Injection の Adapter 統合
   - Bevy Netcode との統合（`weaven-bevy` に network feature 追加）
   - Snapshot history 管理、Rewind 実装
@@ -97,5 +96,3 @@ cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
   - weaven-browser + React Flow でトポロジー編集
   - weaven-wasm でライブ検証（tick preview）
   - Weaven Schema JSON の読み書き
-
-oxidtr C# backend 完成次第、Phase 5 から再開する。

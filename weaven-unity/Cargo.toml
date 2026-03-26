@@ -1,0 +1,15 @@
+[package]
+name = "weaven-unity"
+version = "0.1.0"
+edition = "2021"
+description = "Weaven Unity Adapter — C ABI FFI bridge for Unity native plugin"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+weaven-core = { path = "../weaven-core" }
+serde_json = "1.0"
+
+[dev-dependencies]
+weaven-core = { path = "../weaven-core" }
