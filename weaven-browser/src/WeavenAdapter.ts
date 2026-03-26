@@ -50,6 +50,46 @@ export type StateChangeHandler = (changes: StateChange[]) => void;
 /** Callback invoked each tick regardless of state changes (for animations etc). */
 export type TickHandler = (tick: number) => void;
 
+/** A diff between two snapshots for a single SM. */
+export interface SmStateDiff {
+  readonly sm_id:           number;
+  readonly prev_state:      number;
+  readonly new_state:       number;
+  readonly context_changes: Record<string, number>;
+}
+
+/** Authority model for networked SMs (§8.1). */
+export type Authority = "Server" | "Owner" | "Local";
+
+/** Sync policy for networked SMs (§8.2). */
+export type SyncPolicy =
+  | "InputSync"
+  | "StateSync"
+  | "None"
+  | { ContextSync: { fields: string[] } };
+
+/** Reconciliation policy for networked SMs (§8.3). */
+export type ReconciliationPolicy =
+  | "Snap"
+  | "Rewind"
+  | { Interpolate: { blend_ticks: number } };
+
+/** Network policy declaration for an SM. */
+export interface NetworkPolicy {
+  readonly sm_id:          SmId;
+  readonly authority:      Authority;
+  readonly sync_policy:    SyncPolicy;
+  readonly reconciliation: ReconciliationPolicy;
+}
+
+/** A tagged input for the rollback input buffer. */
+export interface TaggedInput {
+  readonly tick:        number;
+  readonly target_sm:   SmId;
+  readonly target_port: number;
+  readonly payload:     Record<string, number>;
+}
+
 // ---------------------------------------------------------------------------
 // WASM module interface (matches WeavenSession exported from weaven-wasm)
 // ---------------------------------------------------------------------------
@@ -70,6 +110,17 @@ interface WeavenSessionWasm {
   restore_json(json: string): void;
   current_tick(): bigint;
   sm_ids_json(): string;
+  // Network APIs (§8)
+  diff_snapshots_json(beforeJson: string, afterJson: string): string;
+  set_network_policy(policyJson: string): void;
+  policy_filtered_diff_json(diffsJson: string): string;
+  scoped_snapshot_json(smIdsJson: string): string;
+  interest_region_json(cx: number, cy: number, radius: number): string;
+  init_input_buffer(historyDepth: number): void;
+  push_tagged_input(inputJson: string): void;
+  apply_buffered_inputs(): void;
+  save_rewind_base(): void;
+  rewind_to(targetTick: bigint, currentTick: bigint): void;
   free(): void;
 }
 
@@ -296,6 +347,94 @@ export class WeavenAdapter {
   get smIds(): SmId[] {
     this.assertSession();
     return JSON.parse(this.session!.sm_ids_json());
+  }
+
+  // ── Network APIs (§8) ──────────────────────────────────────────────────────
+
+  /**
+   * Compute the diff between two snapshots (before/after a tick).
+   * Returns the list of SM state diffs.
+   */
+  diffSnapshots(beforeJson: string, afterJson: string): SmStateDiff[] {
+    this.assertSession();
+    return JSON.parse(this.session!.diff_snapshots_json(beforeJson, afterJson));
+  }
+
+  /**
+   * Register a network policy for an SM.
+   * Controls sync behaviour, authority, and reconciliation strategy.
+   */
+  setNetworkPolicy(policy: NetworkPolicy): void {
+    this.assertSession();
+    this.session!.set_network_policy(JSON.stringify(policy));
+  }
+
+  /**
+   * Filter a diff list by registered network policies.
+   * SMs with SyncPolicy "None" or "InputSync" are excluded.
+   */
+  policyFilteredDiff(diffs: SmStateDiff[]): SmStateDiff[] {
+    this.assertSession();
+    return JSON.parse(this.session!.policy_filtered_diff_json(JSON.stringify(diffs)));
+  }
+
+  /**
+   * Take a scoped snapshot — only the listed SM IDs.
+   * Useful for interest region / fog-of-war snapshots.
+   */
+  scopedSnapshot(smIds: SmId[]): string {
+    this.assertSession();
+    return this.session!.scoped_snapshot_json(JSON.stringify(smIds));
+  }
+
+  /**
+   * Return SM IDs within a spatial radius (interest region management).
+   */
+  interestRegion(cx: number, cy: number, radius: number): SmId[] {
+    this.assertSession();
+    return JSON.parse(this.session!.interest_region_json(cx, cy, radius));
+  }
+
+  /**
+   * Initialise the input buffer for rollback networking.
+   * @param historyDepth  Number of ticks to retain in the buffer.
+   */
+  initInputBuffer(historyDepth: number): void {
+    this.assertSession();
+    this.session!.init_input_buffer(historyDepth);
+  }
+
+  /**
+   * Push a tagged input into the rollback input buffer.
+   */
+  pushTaggedInput(input: TaggedInput): void {
+    this.assertSession();
+    this.session!.push_tagged_input(JSON.stringify(input));
+  }
+
+  /**
+   * Apply buffered inputs for the current tick to the world.
+   */
+  applyBufferedInputs(): void {
+    this.assertSession();
+    this.session!.apply_buffered_inputs();
+  }
+
+  /**
+   * Save the current world state as the rewind base point.
+   */
+  saveRewindBase(): void {
+    this.assertSession();
+    this.session!.save_rewind_base();
+  }
+
+  /**
+   * Rewind to the saved base snapshot and re-simulate to `currentTick`,
+   * replaying all buffered inputs.
+   */
+  rewindTo(targetTick: number, currentTick: number): void {
+    this.assertSession();
+    this.session!.rewind_to(BigInt(targetTick), BigInt(currentTick));
   }
 
   // ── Cleanup ───────────────────────────────────────────────────────────────

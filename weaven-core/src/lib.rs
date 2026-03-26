@@ -27,6 +27,7 @@ pub mod network;
 pub mod spatial;
 pub use network::{
     snapshot, restore, diff_snapshots, rewind_and_resimulate,
+    policy_filtered_diff, scoped_snapshot, interest_region_sms,
     WorldSnapshot, SmInstanceSnapshot, SmStateDiff,
     TaggedInput, InputBuffer,
     Authority, SyncPolicy, ReconciliationPolicy, SmNetworkPolicy,

@@ -86,12 +86,14 @@ cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
   - `generated/cs/` oxidtr C# 型定義（Models.cs, Validators.cs）
   - `WeavenNative.cs` P/Invoke 宣言（iOS __Internal / その他 weaven_unity）
   - `WeavenWorld.cs` 高レベル C# Adapter（IDisposable, TickResult JSON パース）
+- Phase 6: Network APIs — Adapter 統合 ✅
+  - Core Network APIs（§8）全関数を 4 Adapter に統合
+  - `weaven-bevy`: diff, policy filter, scoped snapshot, input buffer, rewind — 17テスト
+  - `weaven-wasm`: JSON シリアライズ WASM バインディング 10 メソッド — 12テスト
+  - `weaven-unity`: C ABI FFI 10 関数（diff, policy, scoped snapshot, input buffer, rewind）— 18テスト
+  - `weaven-browser`: TypeScript ラッパー 10 メソッド + 型定義 — 29テスト
 
 ### 次のフェーズ候補
-- **Phase 6: Network APIs** — State Diff, Snapshot/Restore, Input Injection の Adapter 統合
-  - Bevy Netcode との統合（`weaven-bevy` に network feature 追加）
-  - Snapshot history 管理、Rewind 実装
-
 - **Phase 7: Weaven Editor** — ブラウザベース SM ビジュアルエディタ
   - weaven-browser + React Flow でトポロジー編集
   - weaven-wasm でライブ検証（tick preview）

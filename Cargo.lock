@@ -4305,6 +4305,7 @@ dependencies = [
 name = "weaven-unity"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
  "weaven-core",
 ]
