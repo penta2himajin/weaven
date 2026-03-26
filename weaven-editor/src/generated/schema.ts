@@ -13,6 +13,7 @@ export interface WeavenSchema {
   state_machines: SmSchema[];
   connections: ConnectionSchema[];
   named_tables: NamedTableSchema[];
+  interaction_rules: InteractionRuleSchema[];
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +97,26 @@ export interface NamedTableSchema {
 }
 
 // ---------------------------------------------------------------------------
+// Interaction Rule (§2.7)
+// ---------------------------------------------------------------------------
+
+export interface InteractionRuleSchema {
+  id: number;
+  participants: IRParticipantSchema[];
+  conditions: IRConditionSchema[];
+  effects: EffectSchema[];
+}
+
+export interface IRParticipantSchema {
+  sm_id: number;
+  required_state?: number | null;
+}
+
+export type IRConditionSchema =
+  | { kind: "Spatial"; radius: number }
+  | { kind: "Guard"; expr: ExprSchema };
+
+// ---------------------------------------------------------------------------
 // Expression Language (§5)
 // ---------------------------------------------------------------------------
 
@@ -123,7 +144,7 @@ export type BinOp =
 // ---------------------------------------------------------------------------
 
 export function emptySchema(): WeavenSchema {
-  return { state_machines: [], connections: [], named_tables: [] };
+  return { state_machines: [], connections: [], named_tables: [], interaction_rules: [] };
 }
 
 export function newSmSchema(id: number): SmSchema {

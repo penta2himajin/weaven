@@ -13,12 +13,26 @@ export default function SmNode({ data }: { data: SmNodeData }) {
       <div className="text-xs text-gray-400">
         Initial: {data.initialState}
       </div>
-      {data.inputPorts.length > 0 && (
-        <Handle type="target" position={Position.Left} className="!bg-indigo-400" />
-      )}
-      {data.outputPorts.length > 0 && (
-        <Handle type="source" position={Position.Right} className="!bg-emerald-400" />
-      )}
+      {data.inputPorts.map((port, i) => (
+        <Handle
+          key={`in-${port.id}`}
+          type="target"
+          position={Position.Left}
+          id={`in-${port.id}`}
+          className="!bg-indigo-400"
+          style={{ top: `${30 + i * 20}%` }}
+        />
+      ))}
+      {data.outputPorts.map((port, i) => (
+        <Handle
+          key={`out-${port.id}`}
+          type="source"
+          position={Position.Right}
+          id={`out-${port.id}`}
+          className="!bg-emerald-400"
+          style={{ top: `${30 + i * 20}%` }}
+        />
+      ))}
     </div>
   );
 }

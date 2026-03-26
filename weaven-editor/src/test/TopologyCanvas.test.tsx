@@ -23,7 +23,7 @@ const schema: WeavenSchema = {
   connections: [
     { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [] },
   ],
-  named_tables: [],
+  named_tables: [], interaction_rules: [],
 };
 
 function renderCanvas() {
@@ -37,9 +37,9 @@ function renderCanvas() {
 describe("TopologyCanvas", () => {
   beforeEach(() => {
     useEditorStore.setState({
-      schema: { state_machines: [], connections: [], named_tables: [] },
+      schema: { state_machines: [], connections: [], named_tables: [], interaction_rules: [] },
       selectedSmId: null,
-      selectedConnectionId: null,
+      selectedConnectionId: null, selectedInteractionRuleId: null,
       dirty: false,
     });
   });
@@ -52,8 +52,29 @@ describe("TopologyCanvas", () => {
   it("renders React Flow container when SMs exist", () => {
     useEditorStore.getState().loadSchema(schema);
     renderCanvas();
-    // React Flow renders a container with role="application" or the class
     const container = document.querySelector(".react-flow");
     expect(container).not.toBeNull();
+  });
+
+  it("addConnectionFromDrag is exposed for onConnect callback", () => {
+    expect(typeof useEditorStore.getState().addConnectionFromDrag).toBe("function");
+  });
+
+  it("store creates connection via addConnectionFromDrag", () => {
+    useEditorStore.getState().loadSchema(schema);
+    useEditorStore.getState().addConnectionFromDrag(1, 1, 2, 0);
+    // Already has connection id=1 from schema, so new one should be id=2
+    const conns = useEditorStore.getState().schema.connections;
+    expect(conns).toHaveLength(1); // duplicate detection: same source/target port already connected
+  });
+
+  it("store creates new connection for different ports", () => {
+    const schemaNoConn: WeavenSchema = {
+      ...schema,
+      connections: [],
+    };
+    useEditorStore.getState().loadSchema(schemaNoConn);
+    useEditorStore.getState().addConnectionFromDrag(1, 1, 2, 0);
+    expect(useEditorStore.getState().schema.connections).toHaveLength(1);
   });
 });

@@ -5,6 +5,8 @@ import type {
   TransitionSchema,
   ConnectionSchema,
   PortSchema,
+  PipelineStepSchema,
+  InteractionRuleSchema,
 } from "../generated/schema";
 import { emptySchema, newSmSchema } from "../generated/schema";
 
@@ -12,6 +14,7 @@ export interface EditorStore {
   schema: WeavenSchema;
   selectedSmId: number | null;
   selectedConnectionId: number | null;
+  selectedInteractionRuleId: number | null;
   dirty: boolean;
 
   // Schema lifecycle
@@ -33,9 +36,21 @@ export interface EditorStore {
   // Connection CRUD
   addConnection(connection: ConnectionSchema): void;
   removeConnection(id: number): void;
+  addConnectionFromDrag(sourceSm: number, sourcePort: number, targetSm: number, targetPort: number): void;
+  updateConnectionDelay(connectionId: number, delay: number): void;
+
+  // Pipeline CRUD
+  addPipelineStep(connectionId: number, step: PipelineStepSchema): void;
+  removePipelineStep(connectionId: number, index: number): void;
 
   // Port CRUD
   addPort(smId: number, direction: "input" | "output", port: PortSchema): void;
+
+  // Interaction Rule CRUD
+  addInteractionRule(): void;
+  removeInteractionRule(id: number): void;
+  updateInteractionRule(id: number, patch: Partial<Omit<InteractionRuleSchema, "id">>): void;
+  selectInteractionRule(id: number | null): void;
 
   // Selection
   selectSm(id: number | null): void;
@@ -61,14 +76,29 @@ function updateSm(
   };
 }
 
+function updateConnection(
+  schema: WeavenSchema,
+  connId: number,
+  updater: (c: ConnectionSchema) => ConnectionSchema,
+): WeavenSchema {
+  return {
+    ...schema,
+    connections: schema.connections.map((c) =>
+      c.id === connId ? updater(c) : c,
+    ),
+  };
+}
+
 export const useEditorStore = create<EditorStore>((set, get) => ({
   schema: emptySchema(),
   selectedSmId: null,
   selectedConnectionId: null,
+  selectedInteractionRuleId: null,
   dirty: false,
 
   loadSchema(schema) {
-    set({ schema, selectedSmId: null, selectedConnectionId: null, dirty: false });
+    const withIR = { ...schema, interaction_rules: schema.interaction_rules ?? [] };
+    set({ schema: withIR, selectedSmId: null, selectedConnectionId: null, selectedInteractionRuleId: null, dirty: false });
   },
 
   exportJson() {
@@ -169,6 +199,69 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     }));
   },
 
+  addConnectionFromDrag(sourceSm, sourcePort, targetSm, targetPort) {
+    set((s) => {
+      if (sourceSm === targetSm) return s;
+      const dup = s.schema.connections.some(
+        (c) =>
+          c.source_sm === sourceSm &&
+          c.source_port === sourcePort &&
+          c.target_sm === targetSm &&
+          c.target_port === targetPort,
+      );
+      if (dup) return s;
+      const id = nextId(s.schema.connections);
+      return {
+        schema: {
+          ...s.schema,
+          connections: [
+            ...s.schema.connections,
+            {
+              id,
+              source_sm: sourceSm,
+              source_port: sourcePort,
+              target_sm: targetSm,
+              target_port: targetPort,
+              delay_ticks: 0,
+              pipeline: [],
+            },
+          ],
+        },
+        dirty: true,
+      };
+    });
+  },
+
+  updateConnectionDelay(connectionId, delay) {
+    set((s) => ({
+      schema: updateConnection(s.schema, connectionId, (c) => ({
+        ...c,
+        delay_ticks: delay,
+      })),
+      dirty: true,
+    }));
+  },
+
+  addPipelineStep(connectionId, step) {
+    set((s) => ({
+      schema: updateConnection(s.schema, connectionId, (c) => ({
+        ...c,
+        pipeline: [...c.pipeline, step],
+      })),
+      dirty: true,
+    }));
+  },
+
+  removePipelineStep(connectionId, index) {
+    set((s) => ({
+      schema: updateConnection(s.schema, connectionId, (c) => ({
+        ...c,
+        pipeline: c.pipeline.filter((_, i) => i !== index),
+      })),
+      dirty: true,
+    }));
+  },
+
   addPort(smId, direction, port) {
     set((s) => ({
       schema: updateSm(s.schema, smId, (sm) => ({
@@ -181,6 +274,53 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     }));
   },
 
+  addInteractionRule() {
+    set((s) => {
+      const id = nextId(s.schema.interaction_rules);
+      const rule: InteractionRuleSchema = {
+        id,
+        participants: [],
+        conditions: [],
+        effects: [],
+      };
+      return {
+        schema: {
+          ...s.schema,
+          interaction_rules: [...s.schema.interaction_rules, rule],
+        },
+        dirty: true,
+      };
+    });
+  },
+
+  removeInteractionRule(id) {
+    set((s) => ({
+      schema: {
+        ...s.schema,
+        interaction_rules: s.schema.interaction_rules.filter((r) => r.id !== id),
+      },
+      selectedInteractionRuleId:
+        s.selectedInteractionRuleId === id ? null : s.selectedInteractionRuleId,
+      dirty: true,
+    }));
+  },
+
+  updateInteractionRule(id, patch) {
+    set((s) => ({
+      schema: {
+        ...s.schema,
+        interaction_rules: s.schema.interaction_rules.map((r) =>
+          r.id === id ? { ...r, ...patch } : r,
+        ),
+      },
+      dirty: true,
+    }));
+  },
+
+  selectInteractionRule(id) {
+    set({ selectedInteractionRuleId: id });
+  },
+
   selectSm(id) {
     set({ selectedSmId: id });
   },
@@ -190,6 +330,6 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   },
 
   clearSelection() {
-    set({ selectedSmId: null, selectedConnectionId: null });
+    set({ selectedSmId: null, selectedConnectionId: null, selectedInteractionRuleId: null });
   },
 }));

@@ -3,6 +3,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import TopologyCanvas from "./components/TopologyCanvas";
 import SmEditorPanel from "./components/SmEditorPanel";
 import ConnectionEditorPanel from "./components/ConnectionEditorPanel";
+import IREditorPanel from "./components/IREditorPanel";
 import LivePreview from "./components/LivePreview";
 import { useEditorStore } from "./stores/editorStore";
 import { parseSchema, validateSchema, serializeSchema } from "./schemaIo";
@@ -91,10 +92,13 @@ export default function App() {
         </div>
 
         {/* Right sidebar */}
-        <aside className="w-72 border-l border-gray-800 overflow-y-auto flex flex-col">
+        <aside className="w-80 border-l border-gray-800 overflow-y-auto flex flex-col">
           <SmEditorPanel />
           <div className="border-t border-gray-800">
             <ConnectionEditorPanel />
+          </div>
+          <div className="border-t border-gray-800">
+            <IREditorPanel />
           </div>
           <div className="border-t border-gray-800">
             <LivePreview adapter={null} />

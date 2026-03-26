@@ -20,7 +20,7 @@ const schema: WeavenSchema = {
   connections: [
     { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [] },
   ],
-  named_tables: [],
+  named_tables: [], interaction_rules: [],
 };
 
 describe("topologyHelpers", () => {

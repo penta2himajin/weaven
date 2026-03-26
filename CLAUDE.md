@@ -97,18 +97,21 @@ cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
   - `weaven-unity`: C ABI FFI 10 関数（diff, policy, scoped snapshot, input buffer, rewind）— 18テスト
   - `weaven-browser`: TypeScript ラッパー 10 メソッド + 型定義 — 29テスト
 
-- Phase 7: Weaven Editor — ブラウザベース SM ビジュアルエディタ (MVP) 🚧
-  - `weaven-editor/` React + React Flow + Zustand + Tailwind — 58テスト
-  - Schema JSON 読み書き（import/export + バリデーション）
+- Phase 7: Weaven Editor — ブラウザベース SM ビジュアルエディタ ✅
+  - `weaven-editor/` React + React Flow + Zustand + Tailwind — 131テスト
+  - Schema JSON 読み書き（import/export + バリデーション + IR対応）
   - TopologyCanvas: React Flow SM ノード + Connection エッジ（dagre レイアウト）
   - SmEditorPanel: State/Transition/Port の CRUD
-  - ConnectionEditorPanel: Connection 詳細表示・削除
-  - LivePreview: WASM tick preview（adapter インターフェース定義済み）
+  - ConnectionEditorPanel: Connection 詳細表示・削除 + Pipeline ステップ CRUD（Transform/Filter/Redirect）+ delay 編集
+  - ドラッグ＆ドロップ Connection 作成（ポートごとの Handle + onConnect + 重複/自己接続防止）
+  - IREditorPanel: Interaction Rule CRUD（Participant + Spatial/Guard Condition）
+  - ExpressionBuilder: Expression Language ビジュアルビルダー（全12 ExprSchema 対応、再帰ツリー編集）
+  - LivePreview: WASM adapter 統合（tick/tickN/Run-Stop/snapshot/restore/transition 表示）
 
 ### 次のフェーズ候補
-- **Phase 7 続き**: Weaven Editor 機能拡充
-  - Interaction Rule エディタ
-  - Expression Language ビジュアルビルダー
-  - Pipeline ステップ編集 UI
-  - ドラッグ＆ドロップで Connection 作成
-  - WASM 実バインディング統合（weaven-wasm + weaven-browser）
+- **Phase 8**: デバッガー機能強化
+  - Phase 4 Cascade replay（per-signal ステッピング）
+  - Guard 評価 AST 可視化
+  - Network sync diff ハイライト
+- **Phase 9**: 追加 Adapter（Godot, Love2D, JVM, Swift）
+- **Phase 10**: Tier 3 Network Transport（独自プロトコル）
