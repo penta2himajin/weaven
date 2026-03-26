@@ -24,6 +24,7 @@
 
 ### フロントエンド UI 実装方針
 oxidtr での型保証が効かない部分なので、Red-Green-Refactoring（テスト先行）で進めること。コンポーネントテスト（vitest + testing-library）とロジックテストを先に書いてから実装する。
+すべてのフロントエンド実装（エディタ・デバッガー含む）で Red-Green-Refactoring サイクルを厳守する。
 
 ### セッション引き継ぎ手順
 ユーザーから提案があるまで引き継ぎ作業（CLAUDE.md + README_HANDOFF.md 作成・tar.gz 圧縮・present_files）に入らないこと。ユーザーが明示的に指示した場合のみ実行する。
@@ -48,6 +49,9 @@ $OXIDTR check --model weaven/models/weaven.als --impl /tmp/weaven-check
 
 # Frontend テスト（デバッガー UI）
 cd weaven-debugger && npx vitest run
+
+# Editor テスト
+cd weaven-editor && npx vitest run
 
 # Browser Adapter テスト
 cd weaven-browser && npx vitest run
@@ -93,8 +97,18 @@ cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
   - `weaven-unity`: C ABI FFI 10 関数（diff, policy, scoped snapshot, input buffer, rewind）— 18テスト
   - `weaven-browser`: TypeScript ラッパー 10 メソッド + 型定義 — 29テスト
 
+- Phase 7: Weaven Editor — ブラウザベース SM ビジュアルエディタ (MVP) 🚧
+  - `weaven-editor/` React + React Flow + Zustand + Tailwind — 58テスト
+  - Schema JSON 読み書き（import/export + バリデーション）
+  - TopologyCanvas: React Flow SM ノード + Connection エッジ（dagre レイアウト）
+  - SmEditorPanel: State/Transition/Port の CRUD
+  - ConnectionEditorPanel: Connection 詳細表示・削除
+  - LivePreview: WASM tick preview（adapter インターフェース定義済み）
+
 ### 次のフェーズ候補
-- **Phase 7: Weaven Editor** — ブラウザベース SM ビジュアルエディタ
-  - weaven-browser + React Flow でトポロジー編集
-  - weaven-wasm でライブ検証（tick preview）
-  - Weaven Schema JSON の読み書き
+- **Phase 7 続き**: Weaven Editor 機能拡充
+  - Interaction Rule エディタ
+  - Expression Language ビジュアルビルダー
+  - Pipeline ステップ編集 UI
+  - ドラッグ＆ドロップで Connection 作成
+  - WASM 実バインディング統合（weaven-wasm + weaven-browser）
