@@ -20,8 +20,11 @@
 ///   - `TickOutput.system_commands` consumed by Bevy systems for HitStop/SlowMotion.
 
 use weaven_core::{World, TickOutput, SmId, PortId, Signal, SignalTypeId,
-                  SystemCommand, snapshot, restore, WorldSnapshot};
-use std::collections::BTreeMap;
+                  SystemCommand, snapshot, restore, WorldSnapshot,
+                  diff_snapshots, policy_filtered_diff, scoped_snapshot,
+                  interest_region_sms, rewind_and_resimulate,
+                  SmStateDiff, SmNetworkPolicy, InputBuffer, TaggedInput};
+use std::collections::{BTreeMap, BTreeSet};
 
 // ---------------------------------------------------------------------------
 // WeavenWorld resource
@@ -173,6 +176,59 @@ pub fn apply_snapshot(weaven: &mut WeavenWorld, snap: &WorldSnapshot) {
     restore(&mut weaven.world, snap);
 }
 
+/// Compute the diff between two snapshots (e.g. before/after a tick).
+pub fn diff_world_snapshots(before: &WorldSnapshot, after: &WorldSnapshot) -> Vec<SmStateDiff> {
+    diff_snapshots(before, after)
+}
+
+/// Filter a diff list by each SM's registered network sync policy.
+/// SMs with `SyncPolicy::None` or `InputSync` are excluded; `StateSync`
+/// strips context changes; `ContextSync` keeps only whitelisted fields.
+pub fn filter_diff_by_policy(weaven: &WeavenWorld, diffs: &[SmStateDiff]) -> Vec<SmStateDiff> {
+    policy_filtered_diff(diffs, &weaven.world.network_policies)
+}
+
+/// Register a network policy for an SM (Authority, SyncPolicy, ReconciliationPolicy).
+pub fn set_network_policy(weaven: &mut WeavenWorld, policy: SmNetworkPolicy) {
+    weaven.world.network_policies.insert(policy.sm_id, policy);
+}
+
+/// Take a snapshot of only the SMs in `sm_ids` (render scope / interest region).
+pub fn take_scoped_snapshot(weaven: &WeavenWorld, sm_ids: &BTreeSet<SmId>) -> WorldSnapshot {
+    scoped_snapshot(&weaven.world, sm_ids)
+}
+
+/// Return SM IDs within a spatial radius (interest region management).
+pub fn query_interest_region(weaven: &WeavenWorld, cx: f32, cy: f32, radius: f32) -> BTreeSet<SmId> {
+    interest_region_sms(&weaven.world, cx, cy, radius)
+}
+
+/// Create a new InputBuffer for rollback networking.
+pub fn create_input_buffer(history_depth: u32) -> InputBuffer {
+    InputBuffer::new(history_depth)
+}
+
+/// Push a tagged input into the buffer.
+pub fn push_tagged_input(buffer: &mut InputBuffer, input: TaggedInput) {
+    buffer.push(input);
+}
+
+/// Apply buffered inputs for the current tick to the world.
+pub fn apply_buffered_inputs(weaven: &mut WeavenWorld, buffer: &InputBuffer) {
+    buffer.apply_tick_inputs(&mut weaven.world);
+}
+
+/// Rewind to a snapshot and re-simulate forward, replaying buffered inputs.
+pub fn rewind_and_replay(
+    weaven: &mut WeavenWorld,
+    base_snapshot: &WorldSnapshot,
+    input_buffer: &InputBuffer,
+    target_tick: u64,
+    current_tick: u64,
+) {
+    rewind_and_resimulate(&mut weaven.world, base_snapshot, input_buffer, target_tick, current_tick);
+}
+
 // ---------------------------------------------------------------------------
 // Tests (no Bevy dependency)
 // ---------------------------------------------------------------------------
@@ -234,6 +290,128 @@ mod tests {
         apply_snapshot(&mut weaven, &snap);
         assert_eq!(weaven.world.instances[&SmId(1)].active_state, StateId(0),
             "restored to S0");
+    }
+
+    #[test]
+    fn test_adapter_diff_snapshots() {
+        let mut weaven = WeavenWorld::new();
+        weaven.world.register_sm(make_simple_sm(SmId(1)));
+
+        let before = take_snapshot(&weaven);
+        push_continuous_input(&mut weaven, SmId(1), "trigger", 1.0);
+        weaven.world.activate(SmId(1));
+        advance_tick(&mut weaven);
+        let after = take_snapshot(&weaven);
+
+        let diffs = diff_world_snapshots(&before, &after);
+        assert_eq!(diffs.len(), 1);
+        assert_eq!(diffs[0].sm_id, 1);
+        assert_eq!(diffs[0].prev_state, 0);
+        assert_eq!(diffs[0].new_state, 1);
+    }
+
+    #[test]
+    fn test_adapter_policy_filtered_diff() {
+        use weaven_core::{Authority, SyncPolicy, ReconciliationPolicy};
+
+        let mut weaven = WeavenWorld::new();
+        weaven.world.register_sm(make_simple_sm(SmId(1)));
+        weaven.world.register_sm(make_simple_sm(SmId(2)));
+
+        // SM(1) = StateSync, SM(2) = None (excluded)
+        set_network_policy(&mut weaven, SmNetworkPolicy {
+            sm_id: SmId(1),
+            authority: Authority::Server,
+            sync_policy: SyncPolicy::StateSync,
+            reconciliation: ReconciliationPolicy::Snap,
+        });
+        set_network_policy(&mut weaven, SmNetworkPolicy {
+            sm_id: SmId(2),
+            authority: Authority::Server,
+            sync_policy: SyncPolicy::None,
+            reconciliation: ReconciliationPolicy::Snap,
+        });
+
+        let before = take_snapshot(&weaven);
+        push_continuous_input(&mut weaven, SmId(1), "trigger", 1.0);
+        push_continuous_input(&mut weaven, SmId(2), "trigger", 1.0);
+        weaven.world.activate(SmId(1));
+        weaven.world.activate(SmId(2));
+        advance_tick(&mut weaven);
+        let after = take_snapshot(&weaven);
+
+        let diffs = diff_world_snapshots(&before, &after);
+        assert_eq!(diffs.len(), 2, "raw diffs should include both SMs");
+
+        let filtered = filter_diff_by_policy(&weaven, &diffs);
+        assert_eq!(filtered.len(), 1, "SM(2) with SyncPolicy::None should be excluded");
+        assert_eq!(filtered[0].sm_id, 1);
+        assert!(filtered[0].context_changes.is_empty(),
+            "StateSync should strip context_changes");
+    }
+
+    #[test]
+    fn test_adapter_scoped_snapshot() {
+        let mut weaven = WeavenWorld::new();
+        weaven.world.register_sm(make_simple_sm(SmId(1)));
+        weaven.world.register_sm(make_simple_sm(SmId(2)));
+
+        let scope: BTreeSet<SmId> = [SmId(1)].into_iter().collect();
+        let snap = take_scoped_snapshot(&weaven, &scope);
+        assert_eq!(snap.instances.len(), 1);
+        assert_eq!(snap.instances[0].sm_id, 1);
+    }
+
+    #[test]
+    fn test_adapter_interest_region() {
+        let mut weaven = WeavenWorld::new();
+        weaven.world.enable_spatial(10.0);
+        weaven.world.register_sm(make_simple_sm(SmId(1)));
+        weaven.world.register_sm(make_simple_sm(SmId(2)));
+
+        sync_position(&mut weaven, SmId(1), 0.0, 0.0);
+        sync_position(&mut weaven, SmId(2), 100.0, 100.0);
+
+        let region = query_interest_region(&weaven, 0.0, 0.0, 5.0);
+        assert!(region.contains(&SmId(1)));
+        assert!(!region.contains(&SmId(2)), "SM(2) too far away");
+    }
+
+    #[test]
+    fn test_adapter_input_buffer_and_rewind() {
+        let mut weaven = WeavenWorld::new();
+        weaven.world.register_sm(make_simple_sm(SmId(1)));
+        weaven.world.activate(SmId(1));
+
+        // Take base snapshot at tick 0
+        let base = take_snapshot(&weaven);
+
+        // Create input buffer and push a tagged input for tick 0
+        let mut buffer = create_input_buffer(10);
+        push_tagged_input(&mut buffer, TaggedInput {
+            tick: 0,
+            target_sm: SmId(1),
+            target_port: PortId(0),
+            signal: Signal {
+                signal_type: SignalTypeId(0),
+                payload: {
+                    let mut p = BTreeMap::new();
+                    p.insert("trigger".to_string(), 1.0);
+                    p
+                },
+            },
+        });
+
+        // Advance a tick with the input buffer
+        apply_buffered_inputs(&mut weaven, &buffer);
+        advance_tick(&mut weaven);
+        assert_eq!(weaven.world.instances[&SmId(1)].active_state, StateId(1),
+            "SM should transition after buffered input");
+
+        // Rewind and replay
+        rewind_and_replay(&mut weaven, &base, &buffer, 0, 1);
+        assert_eq!(weaven.world.instances[&SmId(1)].active_state, StateId(1),
+            "SM should still be in S1 after rewind+replay with same inputs");
     }
 
     #[test]

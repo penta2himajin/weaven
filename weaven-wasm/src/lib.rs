@@ -24,8 +24,11 @@ use weaven_core::{
     World, SmId, StateId, PortId, Signal, SignalTypeId,
     schema::{load_schema, compile_schema},
     snapshot, restore, WorldSnapshot,
+    diff_snapshots, policy_filtered_diff, scoped_snapshot, interest_region_sms,
+    rewind_and_resimulate, InputBuffer, TaggedInput, SmStateDiff,
+    SmNetworkPolicy, Authority, SyncPolicy, ReconciliationPolicy,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use serde::{Serialize, Deserialize};
 
 // ---------------------------------------------------------------------------
@@ -44,6 +47,8 @@ fn js_err(e: impl std::fmt::Display) -> JsValue {
 #[wasm_bindgen]
 pub struct WeavenSession {
     world: World,
+    input_buffer: Option<InputBuffer>,
+    last_snapshot: Option<WorldSnapshot>,
 }
 
 #[wasm_bindgen]
@@ -51,7 +56,11 @@ impl WeavenSession {
     /// Create a new empty session.
     #[wasm_bindgen(constructor)]
     pub fn new() -> WeavenSession {
-        WeavenSession { world: World::new() }
+        WeavenSession {
+            world: World::new(),
+            input_buffer: None,
+            last_snapshot: None,
+        }
     }
 
     /// Load SM definitions from a JSON schema string.
@@ -172,6 +181,99 @@ impl WeavenSession {
         let ids: Vec<u32> = self.world.defs.keys().map(|id| id.0).collect();
         serde_json::to_string(&ids).unwrap_or_default()
     }
+
+    // -- Network APIs (§8) ------------------------------------------------
+
+    /// Compute the diff between two snapshot JSON strings.
+    /// Returns a JSON array of `SmStateDiff`.
+    pub fn diff_snapshots_json(&self, before_json: &str, after_json: &str) -> Result<String, JsValue> {
+        let before = WorldSnapshot::from_json(before_json.as_bytes()).map_err(js_err)?;
+        let after  = WorldSnapshot::from_json(after_json.as_bytes()).map_err(js_err)?;
+        let diffs = diff_snapshots(&before, &after);
+        serde_json::to_string(&diffs).map_err(js_err)
+    }
+
+    /// Register a network policy for an SM.
+    /// `policy_json`: `{"sm_id":1,"authority":"Server","sync_policy":"StateSync","reconciliation":"Snap"}`
+    pub fn set_network_policy(&mut self, policy_json: &str) -> Result<(), JsValue> {
+        let raw: NetworkPolicySer = serde_json::from_str(policy_json).map_err(js_err)?;
+        let policy = raw.to_runtime().map_err(js_err)?;
+        self.world.network_policies.insert(policy.sm_id, policy);
+        Ok(())
+    }
+
+    /// Filter a diff JSON array by registered network policies.
+    /// Returns the filtered diff JSON array.
+    pub fn policy_filtered_diff_json(&self, diffs_json: &str) -> Result<String, JsValue> {
+        let diffs: Vec<SmStateDiff> = serde_json::from_str(diffs_json).map_err(js_err)?;
+        let filtered = policy_filtered_diff(&diffs, &self.world.network_policies);
+        serde_json::to_string(&filtered).map_err(js_err)
+    }
+
+    /// Take a scoped snapshot — only the listed SM IDs.
+    /// `sm_ids_json`: a JSON array `[1,2,3]`.
+    pub fn scoped_snapshot_json(&self, sm_ids_json: &str) -> Result<String, JsValue> {
+        let ids: Vec<u32> = serde_json::from_str(sm_ids_json).map_err(js_err)?;
+        let set: BTreeSet<SmId> = ids.into_iter().map(SmId).collect();
+        let snap = scoped_snapshot(&self.world, &set);
+        let json = String::from_utf8(snap.to_json()).map_err(js_err)?;
+        Ok(json)
+    }
+
+    /// Return SM IDs within a spatial radius as a JSON array.
+    pub fn interest_region_json(&self, cx: f32, cy: f32, radius: f32) -> String {
+        let ids = interest_region_sms(&self.world, cx, cy, radius);
+        let v: Vec<u32> = ids.into_iter().map(|id| id.0).collect();
+        serde_json::to_string(&v).unwrap_or_else(|_| "[]".to_string())
+    }
+
+    /// Initialise the input buffer for rollback networking.
+    pub fn init_input_buffer(&mut self, history_depth: u32) {
+        self.input_buffer = Some(InputBuffer::new(history_depth));
+    }
+
+    /// Push a tagged input into the buffer.
+    /// `input_json`: `{"tick":0,"target_sm":1,"target_port":0,"payload":{"key":1.0}}`
+    pub fn push_tagged_input(&mut self, input_json: &str) -> Result<(), JsValue> {
+        let buf = self.input_buffer.as_mut()
+            .ok_or_else(|| JsValue::from_str("input buffer not initialised"))?;
+        let raw: TaggedInputSer = serde_json::from_str(input_json).map_err(js_err)?;
+        buf.push(TaggedInput {
+            tick: raw.tick,
+            target_sm: SmId(raw.target_sm),
+            target_port: PortId(raw.target_port),
+            signal: Signal {
+                signal_type: SignalTypeId(0),
+                payload: raw.payload,
+            },
+        });
+        Ok(())
+    }
+
+    /// Apply buffered inputs for the current tick.
+    pub fn apply_buffered_inputs(&mut self) -> Result<(), JsValue> {
+        let buf = self.input_buffer.as_ref()
+            .ok_or_else(|| JsValue::from_str("input buffer not initialised"))?;
+        buf.apply_tick_inputs(&mut self.world);
+        Ok(())
+    }
+
+    /// Store the current snapshot as the rewind base point.
+    pub fn save_rewind_base(&mut self) {
+        self.last_snapshot = Some(snapshot(&self.world));
+    }
+
+    /// Rewind to the saved base snapshot and re-simulate to `current_tick`,
+    /// replaying all buffered inputs.
+    pub fn rewind_to(&mut self, target_tick: u64, current_tick: u64) -> Result<(), JsValue> {
+        let base = self.last_snapshot.as_ref()
+            .ok_or_else(|| JsValue::from_str("no rewind base snapshot saved"))?
+            .clone();
+        let buf = self.input_buffer.as_ref()
+            .ok_or_else(|| JsValue::from_str("input buffer not initialised"))?;
+        rewind_and_resimulate(&mut self.world, &base, buf, target_tick, current_tick);
+        Ok(())
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -183,6 +285,76 @@ struct StateChangeSer {
     sm_id: u32,
     prev:  u32,
     next:  u32,
+}
+
+#[derive(Deserialize)]
+struct TaggedInputSer {
+    tick:        u64,
+    target_sm:   u32,
+    target_port: u32,
+    payload:     BTreeMap<String, f64>,
+}
+
+#[derive(Deserialize)]
+struct NetworkPolicySer {
+    sm_id:          u32,
+    authority:      String,
+    sync_policy:    serde_json::Value,
+    reconciliation: serde_json::Value,
+}
+
+impl NetworkPolicySer {
+    fn to_runtime(&self) -> Result<SmNetworkPolicy, String> {
+        let authority = match self.authority.as_str() {
+            "Server" => Authority::Server,
+            "Owner"  => Authority::Owner,
+            "Local"  => Authority::Local,
+            other    => return Err(format!("unknown authority: {other}")),
+        };
+        let sync_policy = match &self.sync_policy {
+            serde_json::Value::String(s) => match s.as_str() {
+                "InputSync"  => SyncPolicy::InputSync,
+                "StateSync"  => SyncPolicy::StateSync,
+                "None"       => SyncPolicy::None,
+                other        => return Err(format!("unknown sync_policy: {other}")),
+            },
+            serde_json::Value::Object(obj) => {
+                if let Some(fields_val) = obj.get("ContextSync") {
+                    let fields: Vec<String> = serde_json::from_value(
+                        fields_val.get("fields").cloned().unwrap_or(serde_json::Value::Array(vec![]))
+                    ).map_err(|e| e.to_string())?;
+                    SyncPolicy::ContextSync { fields }
+                } else {
+                    return Err("unknown sync_policy object".to_string());
+                }
+            },
+            _ => return Err("invalid sync_policy format".to_string()),
+        };
+        let reconciliation = match &self.reconciliation {
+            serde_json::Value::String(s) => match s.as_str() {
+                "Snap"   => ReconciliationPolicy::Snap,
+                "Rewind" => ReconciliationPolicy::Rewind,
+                other    => return Err(format!("unknown reconciliation: {other}")),
+            },
+            serde_json::Value::Object(obj) => {
+                if let Some(val) = obj.get("Interpolate") {
+                    let blend_ticks = val.get("blend_ticks")
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(1) as u32;
+                    ReconciliationPolicy::Interpolate { blend_ticks }
+                } else {
+                    return Err("unknown reconciliation object".to_string());
+                }
+            },
+            _ => return Err("invalid reconciliation format".to_string()),
+        };
+        Ok(SmNetworkPolicy {
+            sm_id: SmId(self.sm_id),
+            authority,
+            sync_policy,
+            reconciliation,
+        })
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -282,6 +454,119 @@ mod tests {
         session.activate(1);
         session.tick();
         assert_eq!(session.active_state(1), 1, "SM1 should ignite");
+    }
+
+    #[test]
+    fn test_session_diff_snapshots() {
+        let mut session = WeavenSession::new();
+        session.load_schema(simple_schema()).unwrap();
+        let before = session.snapshot_json();
+        session.push_input(1, "trigger", 1.0);
+        session.activate(1);
+        session.tick();
+        let after = session.snapshot_json();
+
+        let diffs_json = session.diff_snapshots_json(&before, &after).unwrap();
+        let diffs: Vec<serde_json::Value> = serde_json::from_str(&diffs_json).unwrap();
+        assert_eq!(diffs.len(), 1);
+        assert_eq!(diffs[0]["sm_id"], 1);
+        assert_eq!(diffs[0]["prev_state"], 0);
+        assert_eq!(diffs[0]["new_state"], 1);
+    }
+
+    #[test]
+    fn test_session_network_policy_and_filter() {
+        let mut session = WeavenSession::new();
+        session.load_schema(simple_schema()).unwrap();
+
+        session.set_network_policy(r#"{
+            "sm_id": 1,
+            "authority": "Server",
+            "sync_policy": "StateSync",
+            "reconciliation": "Snap"
+        }"#).unwrap();
+
+        let before = session.snapshot_json();
+        session.push_input(1, "trigger", 1.0);
+        session.activate(1);
+        session.tick();
+        let after = session.snapshot_json();
+
+        let diffs_json = session.diff_snapshots_json(&before, &after).unwrap();
+        let filtered_json = session.policy_filtered_diff_json(&diffs_json).unwrap();
+        let filtered: Vec<serde_json::Value> = serde_json::from_str(&filtered_json).unwrap();
+        assert_eq!(filtered.len(), 1);
+        // StateSync strips context changes
+        assert!(filtered[0]["context_changes"].as_object().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_session_scoped_snapshot() {
+        let mut session = WeavenSession::new();
+        // Load a schema with 2 SMs
+        let schema = r#"{
+            "state_machines": [
+                {"id":1,"states":[0],"initial_state":0,"transitions":[],"input_ports":[],"output_ports":[],"elapse_capability":"NonElapsable"},
+                {"id":2,"states":[0],"initial_state":0,"transitions":[],"input_ports":[],"output_ports":[],"elapse_capability":"NonElapsable"}
+            ],
+            "connections": [],
+            "named_tables": []
+        }"#;
+        session.load_schema(schema).unwrap();
+
+        let snap_json = session.scoped_snapshot_json("[1]").unwrap();
+        let snap: serde_json::Value = serde_json::from_str(&snap_json).unwrap();
+        assert_eq!(snap["instances"].as_array().unwrap().len(), 1);
+        assert_eq!(snap["instances"][0]["sm_id"], 1);
+    }
+
+    #[test]
+    fn test_session_input_buffer_and_rewind() {
+        let mut session = WeavenSession::new();
+        session.load_schema(simple_schema()).unwrap();
+        session.activate(1);
+        session.init_input_buffer(10);
+        session.save_rewind_base();
+
+        // Push a tagged input that sets trigger
+        session.push_tagged_input(r#"{
+            "tick": 0,
+            "target_sm": 1,
+            "target_port": 0,
+            "payload": {"trigger": 1.0}
+        }"#).unwrap();
+
+        // Apply and tick
+        session.apply_buffered_inputs().unwrap();
+        session.tick();
+        assert_eq!(session.active_state(1), 1, "should transition");
+
+        // Rewind and replay
+        session.rewind_to(0, 1).unwrap();
+        assert_eq!(session.active_state(1), 1,
+            "should still be S1 after rewind+replay");
+    }
+
+    #[test]
+    fn test_session_interest_region() {
+        let mut session = WeavenSession::new();
+        let schema = r#"{
+            "state_machines": [
+                {"id":1,"states":[0],"initial_state":0,"transitions":[],"input_ports":[],"output_ports":[],"elapse_capability":"NonElapsable"},
+                {"id":2,"states":[0],"initial_state":0,"transitions":[],"input_ports":[],"output_ports":[],"elapse_capability":"NonElapsable"}
+            ],
+            "connections": [],
+            "named_tables": []
+        }"#;
+        session.load_schema(schema).unwrap();
+        session.enable_spatial(10.0);
+        session.set_position(1, 0.0, 0.0);
+        session.set_position(2, 100.0, 100.0);
+
+        let json = session.interest_region_json(0.0, 0.0, 5.0);
+        let ids: Vec<u32> = serde_json::from_str(&json).unwrap();
+        assert!(ids.contains(&1));
+        assert!(!ids.contains(&2));
     }
 
     #[test]
