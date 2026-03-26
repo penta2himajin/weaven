@@ -19,10 +19,11 @@ export function parseSchema(json: string): ParseResult {
   const obj = raw as Record<string, unknown>;
   const schema: WeavenSchema = {
     state_machines: Array.isArray(obj.state_machines)
-      ? obj.state_machines.map(fillSmDefaults)
+      ? (obj.state_machines.map(fillSmDefaults) as unknown as WeavenSchema["state_machines"])
       : [],
     connections: Array.isArray(obj.connections) ? obj.connections : [],
     named_tables: Array.isArray(obj.named_tables) ? obj.named_tables : [],
+    interaction_rules: Array.isArray(obj.interaction_rules) ? obj.interaction_rules : [],
   };
 
   return { ok: true, value: schema };
@@ -78,6 +79,19 @@ export function validateSchema(schema: WeavenSchema): string[] {
     }
     if (!smIds.has(c.target_sm)) {
       errors.push(`Connection(${c.id}): target_sm ${c.target_sm} not found`);
+    }
+  }
+
+  const irIds = new Set<number>();
+  for (const ir of schema.interaction_rules ?? []) {
+    if (irIds.has(ir.id)) {
+      errors.push(`Duplicate IR id: ${ir.id}`);
+    }
+    irIds.add(ir.id);
+    for (const p of ir.participants) {
+      if (!smIds.has(p.sm_id)) {
+        errors.push(`IR(${ir.id}): participant sm_id ${p.sm_id} not found`);
+      }
     }
   }
 

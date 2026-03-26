@@ -4,9 +4,10 @@ import type { WeavenSchema } from "../generated/schema";
 
 function resetStore() {
   useEditorStore.setState({
-    schema: { state_machines: [], connections: [], named_tables: [] },
+    schema: { state_machines: [], connections: [], named_tables: [], interaction_rules: [] },
     selectedSmId: null,
     selectedConnectionId: null,
+    selectedInteractionRuleId: null,
     dirty: false,
   });
 }
@@ -26,6 +27,7 @@ const fireSchema: WeavenSchema = {
   ],
   connections: [],
   named_tables: [],
+  interaction_rules: [],
 };
 
 describe("editorStore", () => {
@@ -203,6 +205,215 @@ describe("editorStore", () => {
       const s = useEditorStore.getState();
       expect(s.selectedSmId).toBeNull();
       expect(s.selectedConnectionId).toBeNull();
+    });
+  });
+
+  // --- Drag & Drop Connection ---
+  describe("addConnectionFromDrag", () => {
+    it("creates a connection between two SM ports", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        state_machines: [
+          ...fireSchema.state_machines,
+          { id: 2, states: [0], initial_state: 0, transitions: [], input_ports: [{ id: 0, kind: "Input", signal_type: 0 }], output_ports: [] },
+        ],
+      });
+      useEditorStore.getState().addConnectionFromDrag(1, 1, 2, 0);
+      const conns = useEditorStore.getState().schema.connections;
+      expect(conns).toHaveLength(1);
+      expect(conns[0].source_sm).toBe(1);
+      expect(conns[0].source_port).toBe(1);
+      expect(conns[0].target_sm).toBe(2);
+      expect(conns[0].target_port).toBe(0);
+      expect(conns[0].delay_ticks).toBe(0);
+      expect(conns[0].pipeline).toEqual([]);
+      expect(useEditorStore.getState().dirty).toBe(true);
+    });
+
+    it("assigns unique IDs to new connections", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        state_machines: [
+          ...fireSchema.state_machines,
+          { id: 2, states: [0], initial_state: 0, transitions: [], input_ports: [{ id: 0, kind: "Input", signal_type: 0 }, { id: 2, kind: "Input", signal_type: 0 }], output_ports: [] },
+        ],
+      });
+      useEditorStore.getState().addConnectionFromDrag(1, 1, 2, 0);
+      useEditorStore.getState().addConnectionFromDrag(1, 1, 2, 2);
+      const conns = useEditorStore.getState().schema.connections;
+      expect(conns).toHaveLength(2);
+      expect(conns[0].id).not.toBe(conns[1].id);
+    });
+
+    it("does not create duplicate connections", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        state_machines: [
+          ...fireSchema.state_machines,
+          { id: 2, states: [0], initial_state: 0, transitions: [], input_ports: [{ id: 0, kind: "Input", signal_type: 0 }], output_ports: [] },
+        ],
+      });
+      useEditorStore.getState().addConnectionFromDrag(1, 1, 2, 0);
+      useEditorStore.getState().addConnectionFromDrag(1, 1, 2, 0);
+      expect(useEditorStore.getState().schema.connections).toHaveLength(1);
+    });
+
+    it("does not allow self-connections (same SM)", () => {
+      useEditorStore.getState().loadSchema(fireSchema);
+      useEditorStore.getState().addConnectionFromDrag(1, 1, 1, 0);
+      expect(useEditorStore.getState().schema.connections).toHaveLength(0);
+    });
+  });
+
+  // --- Pipeline Step CRUD ---
+  describe("addPipelineStep", () => {
+    it("adds a Transform step to a connection", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        connections: [
+          { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [] },
+        ],
+      });
+      useEditorStore.getState().addPipelineStep(1, { Transform: { value: { Num: 42 } } });
+      const conn = useEditorStore.getState().schema.connections.find((c) => c.id === 1)!;
+      expect(conn.pipeline).toHaveLength(1);
+      expect(useEditorStore.getState().dirty).toBe(true);
+    });
+
+    it("adds a Filter step to a connection", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        connections: [
+          { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [] },
+        ],
+      });
+      useEditorStore.getState().addPipelineStep(1, { Filter: { Bool: true } });
+      const conn = useEditorStore.getState().schema.connections.find((c) => c.id === 1)!;
+      expect(conn.pipeline).toHaveLength(1);
+      expect("Filter" in conn.pipeline[0]).toBe(true);
+    });
+
+    it("adds a Redirect step to a connection", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        connections: [
+          { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [] },
+        ],
+      });
+      useEditorStore.getState().addPipelineStep(1, { Redirect: 5 });
+      const conn = useEditorStore.getState().schema.connections.find((c) => c.id === 1)!;
+      expect(conn.pipeline).toHaveLength(1);
+      expect("Redirect" in conn.pipeline[0]).toBe(true);
+    });
+  });
+
+  describe("removePipelineStep", () => {
+    it("removes a pipeline step by index", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        connections: [
+          { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [{ Filter: { Bool: true } }, { Redirect: 3 }] },
+        ],
+      });
+      useEditorStore.getState().removePipelineStep(1, 0);
+      const conn = useEditorStore.getState().schema.connections.find((c) => c.id === 1)!;
+      expect(conn.pipeline).toHaveLength(1);
+      expect("Redirect" in conn.pipeline[0]).toBe(true);
+    });
+  });
+
+  describe("updateConnectionDelay", () => {
+    it("updates delay_ticks on a connection", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        connections: [
+          { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [] },
+        ],
+      });
+      useEditorStore.getState().updateConnectionDelay(1, 5);
+      const conn = useEditorStore.getState().schema.connections.find((c) => c.id === 1)!;
+      expect(conn.delay_ticks).toBe(5);
+      expect(useEditorStore.getState().dirty).toBe(true);
+    });
+  });
+
+  // --- Interaction Rule CRUD ---
+  describe("addInteractionRule", () => {
+    it("adds an interaction rule to the schema", () => {
+      useEditorStore.getState().addInteractionRule();
+      const rules = useEditorStore.getState().schema.interaction_rules;
+      expect(rules).toHaveLength(1);
+      expect(rules[0].id).toBe(1);
+      expect(rules[0].participants).toEqual([]);
+      expect(rules[0].conditions).toEqual([]);
+      expect(rules[0].effects).toEqual([]);
+      expect(useEditorStore.getState().dirty).toBe(true);
+    });
+
+    it("assigns incrementing IDs", () => {
+      useEditorStore.getState().addInteractionRule();
+      useEditorStore.getState().addInteractionRule();
+      const rules = useEditorStore.getState().schema.interaction_rules;
+      expect(rules[0].id).not.toBe(rules[1].id);
+    });
+  });
+
+  describe("removeInteractionRule", () => {
+    it("removes an interaction rule by id", () => {
+      useEditorStore.getState().addInteractionRule();
+      const id = useEditorStore.getState().schema.interaction_rules[0].id;
+      useEditorStore.getState().removeInteractionRule(id);
+      expect(useEditorStore.getState().schema.interaction_rules).toHaveLength(0);
+    });
+  });
+
+  describe("updateInteractionRule", () => {
+    it("updates participants", () => {
+      useEditorStore.getState().addInteractionRule();
+      const id = useEditorStore.getState().schema.interaction_rules[0].id;
+      useEditorStore.getState().updateInteractionRule(id, {
+        participants: [{ sm_id: 1, required_state: 0 }],
+      });
+      const rule = useEditorStore.getState().schema.interaction_rules.find((r) => r.id === id)!;
+      expect(rule.participants).toHaveLength(1);
+      expect(rule.participants[0].sm_id).toBe(1);
+    });
+
+    it("updates conditions", () => {
+      useEditorStore.getState().addInteractionRule();
+      const id = useEditorStore.getState().schema.interaction_rules[0].id;
+      useEditorStore.getState().updateInteractionRule(id, {
+        conditions: [{ kind: "Spatial", radius: 10 }],
+      });
+      const rule = useEditorStore.getState().schema.interaction_rules.find((r) => r.id === id)!;
+      expect(rule.conditions).toHaveLength(1);
+    });
+
+    it("updates effects", () => {
+      useEditorStore.getState().addInteractionRule();
+      const id = useEditorStore.getState().schema.interaction_rules[0].id;
+      useEditorStore.getState().updateInteractionRule(id, {
+        effects: [{ Signal: { port: 0, payload: {} } }],
+      });
+      const rule = useEditorStore.getState().schema.interaction_rules.find((r) => r.id === id)!;
+      expect(rule.effects).toHaveLength(1);
+    });
+  });
+
+  describe("selectedInteractionRuleId", () => {
+    it("selectInteractionRule sets the selected IR id", () => {
+      useEditorStore.getState().addInteractionRule();
+      const id = useEditorStore.getState().schema.interaction_rules[0].id;
+      useEditorStore.getState().selectInteractionRule(id);
+      expect(useEditorStore.getState().selectedInteractionRuleId).toBe(id);
+    });
+
+    it("clearSelection clears IR selection too", () => {
+      useEditorStore.getState().addInteractionRule();
+      const id = useEditorStore.getState().schema.interaction_rules[0].id;
+      useEditorStore.getState().selectInteractionRule(id);
+      useEditorStore.getState().clearSelection();
+      expect(useEditorStore.getState().selectedInteractionRuleId).toBeNull();
     });
   });
 

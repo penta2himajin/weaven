@@ -16,7 +16,7 @@ const validJson = JSON.stringify({
     },
   ],
   connections: [],
-  named_tables: [],
+  named_tables: [], interaction_rules: [],
 });
 
 describe("schemaIo", () => {
@@ -78,7 +78,7 @@ describe("schemaIo", () => {
           { id: 1, states: [0], initial_state: 0, transitions: [], input_ports: [], output_ports: [] },
         ],
         connections: [],
-        named_tables: [],
+        named_tables: [], interaction_rules: [],
       };
       const errors = validateSchema(schema);
       expect(errors.some((e) => e.includes("Duplicate SM id"))).toBe(true);
@@ -90,7 +90,7 @@ describe("schemaIo", () => {
           { id: 1, states: [0], initial_state: 5, transitions: [], input_ports: [], output_ports: [] },
         ],
         connections: [],
-        named_tables: [],
+        named_tables: [], interaction_rules: [],
       };
       const errors = validateSchema(schema);
       expect(errors.some((e) => e.includes("initial_state"))).toBe(true);
@@ -104,7 +104,7 @@ describe("schemaIo", () => {
         connections: [
           { id: 1, source_sm: 1, source_port: 1, target_sm: 99, target_port: 0, delay_ticks: 0, pipeline: [] },
         ],
-        named_tables: [],
+        named_tables: [], interaction_rules: [],
       };
       const errors = validateSchema(schema);
       expect(errors.some((e) => e.includes("target_sm"))).toBe(true);
@@ -120,10 +120,47 @@ describe("schemaIo", () => {
           },
         ],
         connections: [],
-        named_tables: [],
+        named_tables: [], interaction_rules: [],
       };
       const errors = validateSchema(schema);
       expect(errors.some((e) => e.includes("target 99"))).toBe(true);
+    });
+
+    it("detects IR participant referencing non-existent SM", () => {
+      const schema: WeavenSchema = {
+        state_machines: [
+          { id: 1, states: [0], initial_state: 0, transitions: [], input_ports: [], output_ports: [] },
+        ],
+        connections: [],
+        named_tables: [],
+        interaction_rules: [
+          { id: 1, participants: [{ sm_id: 99 }], conditions: [], effects: [] },
+        ],
+      };
+      const errors = validateSchema(schema);
+      expect(errors.some((e) => e.includes("participant sm_id 99"))).toBe(true);
+    });
+
+    it("detects duplicate IR IDs", () => {
+      const schema: WeavenSchema = {
+        state_machines: [],
+        connections: [],
+        named_tables: [],
+        interaction_rules: [
+          { id: 1, participants: [], conditions: [], effects: [] },
+          { id: 1, participants: [], conditions: [], effects: [] },
+        ],
+      };
+      const errors = validateSchema(schema);
+      expect(errors.some((e) => e.includes("Duplicate IR id"))).toBe(true);
+    });
+
+    it("parses interaction_rules defaults when missing", () => {
+      const result = parseSchema(JSON.stringify({ state_machines: [] }));
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.interaction_rules).toEqual([]);
+      }
     });
   });
 });

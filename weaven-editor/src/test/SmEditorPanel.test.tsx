@@ -15,14 +15,14 @@ const schema: WeavenSchema = {
     },
   ],
   connections: [],
-  named_tables: [],
+  named_tables: [], interaction_rules: [],
 };
 
 function resetStore() {
   useEditorStore.setState({
-    schema: { state_machines: [], connections: [], named_tables: [] },
+    schema: { state_machines: [], connections: [], named_tables: [], interaction_rules: [] },
     selectedSmId: null,
-    selectedConnectionId: null,
+    selectedConnectionId: null, selectedInteractionRuleId: null,
     dirty: false,
   });
 }
