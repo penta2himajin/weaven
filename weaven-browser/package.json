@@ -1,0 +1,19 @@
+{
+  "name": "@weaven/browser",
+  "version": "0.1.0",
+  "description": "Weaven Browser Adapter — TypeScript integration for WASM builds",
+  "main": "src/WeavenAdapter.ts",
+  "types": "src/WeavenAdapter.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "jsdom": "^29.0.1"
+  }
+}

@@ -1,0 +1,22 @@
+[package]
+name = "weaven-debugger"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "weaven_debugger_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+weaven-core = { path = "../../weaven-core", features = ["trace"] }
+weaven-debugger-core = { path = "../../weaven-debugger-core" }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

@@ -1,0 +1,131 @@
+{
+  "tick": 1,
+  "trace_events": [
+    {
+      "GuardEvaluated": {
+        "tick": 1,
+        "phase": "Evaluate",
+        "transition": 10,
+        "sm_id": 1,
+        "result": true,
+        "context_snapshot": [
+          [
+            "intensity",
+            3.0
+          ]
+        ]
+      }
+    },
+    {
+      "TransitionFired": {
+        "tick": 1,
+        "phase": "Execute",
+        "transition": 10,
+        "sm_id": 1,
+        "from_state": 0,
+        "to_state": 1
+      }
+    },
+    {
+      "SignalEmitted": {
+        "tick": 1,
+        "phase": "Execute",
+        "sm_id": 1,
+        "port": 1,
+        "target": 2
+      }
+    },
+    {
+      "CascadeStep": {
+        "tick": 1,
+        "phase": "Propagate",
+        "depth": 1,
+        "queue_size": 2
+      }
+    },
+    {
+      "GuardEvaluated": {
+        "tick": 1,
+        "phase": "Propagate",
+        "transition": 20,
+        "sm_id": 2,
+        "result": true,
+        "context_snapshot": [
+          [
+            "intensity",
+            2.0
+          ]
+        ]
+      }
+    },
+    {
+      "TransitionFired": {
+        "tick": 1,
+        "phase": "Propagate",
+        "transition": 20,
+        "sm_id": 2,
+        "from_state": 0,
+        "to_state": 1
+      }
+    },
+    {
+      "SignalEmitted": {
+        "tick": 1,
+        "phase": "Propagate",
+        "sm_id": 2,
+        "port": 1,
+        "target": 3
+      }
+    },
+    {
+      "CascadeStep": {
+        "tick": 1,
+        "phase": "Propagate",
+        "depth": 2,
+        "queue_size": 1
+      }
+    },
+    {
+      "GuardEvaluated": {
+        "tick": 1,
+        "phase": "Propagate",
+        "transition": 30,
+        "sm_id": 3,
+        "result": true,
+        "context_snapshot": [
+          [
+            "intensity",
+            1.0
+          ]
+        ]
+      }
+    },
+    {
+      "TransitionFired": {
+        "tick": 1,
+        "phase": "Propagate",
+        "transition": 30,
+        "sm_id": 3,
+        "from_state": 0,
+        "to_state": 1
+      }
+    }
+  ],
+  "state_changes": [
+    {
+      "sm_id": 1,
+      "from_state": 0,
+      "to_state": 1
+    },
+    {
+      "sm_id": 2,
+      "from_state": 0,
+      "to_state": 1
+    },
+    {
+      "sm_id": 3,
+      "from_state": 0,
+      "to_state": 1
+    }
+  ]
+}

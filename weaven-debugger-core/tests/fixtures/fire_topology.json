@@ -1,0 +1,35 @@
+{
+  "nodes": [
+    {
+      "sm_id": 1,
+      "active_state": 0,
+      "label": "SM(1)"
+    },
+    {
+      "sm_id": 2,
+      "active_state": 0,
+      "label": "SM(2)"
+    },
+    {
+      "sm_id": 3,
+      "active_state": 0,
+      "label": "SM(3)"
+    }
+  ],
+  "edges": [
+    {
+      "source": 1,
+      "target": 2,
+      "kind": "Static",
+      "connection_id": 1,
+      "label": "C(1) [2p]"
+    },
+    {
+      "source": 2,
+      "target": 3,
+      "kind": "Static",
+      "connection_id": 2,
+      "label": "C(2) [2p]"
+    }
+  ]
+}

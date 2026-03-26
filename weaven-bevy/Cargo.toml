@@ -1,0 +1,9 @@
+[package]
+name = "weaven-bevy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+weaven-core = { path = "../weaven-core" }
+# bevy is optional — uncomment to enable full Bevy integration:
+# bevy = { version = "0.14", default-features = false, features = ["bevy_core_pipeline"] }

@@ -1,0 +1,24 @@
+# Rust
+/target/
+**/target/
+# Node
+node_modules/
+dist/
+
+# WASM build output
+weaven-wasm/pkg/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Patches (session artifacts)
+*.patch
+
+# oxidtr is an external tool — see https://github.com/penta2himajin/oxidtr

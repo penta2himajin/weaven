@@ -1,0 +1,67 @@
+{
+  "tick": 1,
+  "trace_events": [
+    {
+      "GuardEvaluated": {
+        "tick": 1,
+        "phase": "Evaluate",
+        "transition": 100,
+        "sm_id": 10,
+        "result": true,
+        "context_snapshot": [
+          [
+            "timer",
+            1.0
+          ]
+        ]
+      }
+    },
+    {
+      "GuardEvaluated": {
+        "tick": 1,
+        "phase": "Evaluate",
+        "transition": 200,
+        "sm_id": 20,
+        "result": true,
+        "context_snapshot": [
+          [
+            "parry",
+            1.0
+          ]
+        ]
+      }
+    },
+    {
+      "TransitionFired": {
+        "tick": 1,
+        "phase": "Execute",
+        "transition": 100,
+        "sm_id": 10,
+        "from_state": 0,
+        "to_state": 1
+      }
+    },
+    {
+      "TransitionFired": {
+        "tick": 1,
+        "phase": "Execute",
+        "transition": 200,
+        "sm_id": 20,
+        "from_state": 10,
+        "to_state": 11
+      }
+    }
+  ],
+  "state_changes": [
+    {
+      "sm_id": 10,
+      "from_state": 0,
+      "to_state": 1
+    },
+    {
+      "sm_id": 20,
+      "from_state": 10,
+      "to_state": 11
+    }
+  ]
+}

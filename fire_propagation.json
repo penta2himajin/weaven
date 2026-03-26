@@ -1,0 +1,156 @@
+{
+  "state_machines": [
+    {
+      "id": 1,
+      "states": [0, 1],
+      "initial_state": 0,
+      "transitions": [
+        {
+          "id": 10,
+          "source": 0,
+          "target": 1,
+          "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "intensity" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "intensity": { "CtxField": "intensity" } } } }
+          ]
+        }
+      ],
+      "input_ports": [{ "id": 0, "kind": "Input", "signal_type": 0 }],
+      "output_ports": [{ "id": 1, "kind": "Output", "signal_type": 0 }]
+    },
+    {
+      "id": 2,
+      "states": [0, 1],
+      "initial_state": 0,
+      "transitions": [
+        {
+          "id": 20,
+          "source": 0,
+          "target": 1,
+          "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "intensity" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "intensity": { "CtxField": "intensity" } } } }
+          ]
+        }
+      ],
+      "input_ports": [{ "id": 0, "kind": "Input", "signal_type": 0 }],
+      "output_ports": [{ "id": 1, "kind": "Output", "signal_type": 0 }]
+    },
+    {
+      "id": 3,
+      "states": [0, 1],
+      "initial_state": 0,
+      "transitions": [
+        {
+          "id": 30,
+          "source": 0,
+          "target": 1,
+          "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "intensity" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "intensity": { "CtxField": "intensity" } } } }
+          ]
+        }
+      ],
+      "input_ports": [{ "id": 0, "kind": "Input", "signal_type": 0 }],
+      "output_ports": [{ "id": 1, "kind": "Output", "signal_type": 0 }]
+    },
+    {
+      "id": 4,
+      "states": [0, 1],
+      "initial_state": 0,
+      "transitions": [
+        {
+          "id": 40,
+          "source": 0,
+          "target": 1,
+          "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "intensity" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "intensity": { "CtxField": "intensity" } } } }
+          ]
+        }
+      ],
+      "input_ports": [{ "id": 0, "kind": "Input", "signal_type": 0 }],
+      "output_ports": [{ "id": 1, "kind": "Output", "signal_type": 0 }]
+    },
+    {
+      "id": 5,
+      "states": [0, 1],
+      "initial_state": 0,
+      "transitions": [
+        {
+          "id": 50,
+          "source": 0,
+          "target": 1,
+          "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "intensity" }, "right": { "Num": 0.0 } } },
+          "effects": []
+        }
+      ],
+      "input_ports": [{ "id": 0, "kind": "Input", "signal_type": 0 }],
+      "output_ports": [{ "id": 1, "kind": "Output", "signal_type": 0 }]
+    }
+  ],
+  "connections": [
+    {
+      "id": 1,
+      "source_sm": 1,
+      "source_port": 1,
+      "target_sm": 2,
+      "target_port": 0,
+      "delay_ticks": 0,
+      "pipeline": [
+        { "Transform": { "intensity": { "BinOp": { "op": "Sub", "left": { "SigField": "intensity" }, "right": { "Num": 1.0 } } } } },
+        { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "intensity" }, "right": { "Num": 0.0 } } } }
+      ]
+    },
+    {
+      "id": 2,
+      "source_sm": 2,
+      "source_port": 1,
+      "target_sm": 3,
+      "target_port": 0,
+      "delay_ticks": 0,
+      "pipeline": [
+        { "Transform": { "intensity": { "BinOp": { "op": "Sub", "left": { "SigField": "intensity" }, "right": { "Num": 1.0 } } } } },
+        { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "intensity" }, "right": { "Num": 0.0 } } } }
+      ]
+    },
+    {
+      "id": 3,
+      "source_sm": 3,
+      "source_port": 1,
+      "target_sm": 4,
+      "target_port": 0,
+      "delay_ticks": 0,
+      "pipeline": [
+        { "Transform": { "intensity": { "BinOp": { "op": "Sub", "left": { "SigField": "intensity" }, "right": { "Num": 1.0 } } } } },
+        { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "intensity" }, "right": { "Num": 0.0 } } } }
+      ]
+    },
+    {
+      "id": 4,
+      "source_sm": 4,
+      "source_port": 1,
+      "target_sm": 5,
+      "target_port": 0,
+      "delay_ticks": 0,
+      "pipeline": [
+        { "Transform": { "intensity": { "BinOp": { "op": "Sub", "left": { "SigField": "intensity" }, "right": { "Num": 1.0 } } } } },
+        { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "intensity" }, "right": { "Num": 0.0 } } } }
+      ]
+    }
+  ],
+  "named_tables": [
+    {
+      "name": "element_chart",
+      "entries": {
+        "Fire": { "Water": { "reaction": "Vaporize", "multiplier": 2.0 }, "Grass": { "reaction": "Burn", "multiplier": 1.5 } },
+        "Water": { "Fire": { "reaction": "Vaporize", "multiplier": 2.0 } }
+      }
+    }
+  ]
+}

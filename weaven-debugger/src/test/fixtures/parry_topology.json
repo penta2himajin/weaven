@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    {
+      "sm_id": 10,
+      "active_state": 0,
+      "label": "SM(10)"
+    },
+    {
+      "sm_id": 20,
+      "active_state": 10,
+      "label": "SM(20)"
+    }
+  ],
+  "edges": []
+}
