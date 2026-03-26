@@ -4302,6 +4302,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "weaven-unity"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "weaven-core",
+]
+
+[[package]]
 name = "weaven-wasm"
 version = "0.1.0"
 dependencies = [
