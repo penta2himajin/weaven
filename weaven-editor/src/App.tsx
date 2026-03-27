@@ -1,10 +1,13 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import TopologyCanvas from "./components/TopologyCanvas";
 import SmEditorPanel from "./components/SmEditorPanel";
 import ConnectionEditorPanel from "./components/ConnectionEditorPanel";
 import IREditorPanel from "./components/IREditorPanel";
+import NamedTablesPanel from "./components/NamedTablesPanel";
 import LivePreview from "./components/LivePreview";
+import type { WeavenAdapterLike } from "./components/LivePreview";
+import { createWasmAdapter } from "./components/WasmAdapterBridge";
 import { useEditorStore } from "./stores/editorStore";
 import { parseSchema, validateSchema, serializeSchema } from "./schemaIo";
 
@@ -14,6 +17,11 @@ export default function App() {
   const loadSchema = useEditorStore((s) => s.loadSchema);
   const dirty = useEditorStore((s) => s.dirty);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [wasmAdapter, setWasmAdapter] = useState<WeavenAdapterLike | null>(null);
+
+  useEffect(() => {
+    createWasmAdapter().then(setWasmAdapter);
+  }, []);
 
   const errors = validateSchema(schema);
 
@@ -101,7 +109,10 @@ export default function App() {
             <IREditorPanel />
           </div>
           <div className="border-t border-gray-800">
-            <LivePreview adapter={null} />
+            <NamedTablesPanel />
+          </div>
+          <div className="border-t border-gray-800">
+            <LivePreview adapter={wasmAdapter} />
           </div>
           <div className="border-t border-gray-800 p-4">
             <h4 className="text-xs font-medium text-gray-400 uppercase mb-1">Validation</h4>

@@ -57,4 +57,9 @@ describe("App", () => {
     render(<App />);
     expect(screen.getByText(/load a schema/i)).toBeInTheDocument();
   });
+
+  it("renders Named Tables panel", () => {
+    render(<App />);
+    expect(screen.getByText("Named Tables")).toBeInTheDocument();
+  });
 });
