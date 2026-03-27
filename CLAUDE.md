@@ -62,6 +62,12 @@ cargo build -p weaven-wasm --target wasm32-unknown-unknown
 # Golden fixture 再生成（Rust 型変更時）
 cargo test -p weaven-debugger-core --test golden_fixtures -- --ignored
 cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
+
+# C# 型定義再生成（Alloy モデル変更時）
+cargo run -p als2cs -- models/weaven-debugger.als --output generated/cs
+
+# C# テスト（dotnet SDK 8.0 必要）
+cd weaven-unity/cs/Weaven.Tests && dotnet test
 ```
 
 ---
