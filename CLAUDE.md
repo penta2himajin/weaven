@@ -98,15 +98,18 @@ cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
   - `weaven-browser`: TypeScript ラッパー 10 メソッド + 型定義 — 29テスト
 
 - Phase 7: Weaven Editor — ブラウザベース SM ビジュアルエディタ ✅
-  - `weaven-editor/` React + React Flow + Zustand + Tailwind — 131テスト
+  - `weaven-editor/` React + React Flow + Zustand + Tailwind — 190テスト
   - Schema JSON 読み書き（import/export + バリデーション + IR対応）
   - TopologyCanvas: React Flow SM ノード + Connection エッジ（dagre レイアウト）
-  - SmEditorPanel: State/Transition/Port の CRUD
-  - ConnectionEditorPanel: Connection 詳細表示・削除 + Pipeline ステップ CRUD（Transform/Filter/Redirect）+ delay 編集
+  - SmEditorPanel: State/Transition/Port の CRUD + Transition Guard/Effect 編集（ExpressionBuilder統合）
+  - ConnectionEditorPanel: Connection 詳細表示・削除 + Pipeline ステップ CRUD（Transform/Filter/Redirect）+ delay 編集 + Pipeline式編集（Transform field mapping/Filter ExpressionBuilder/Redirect port）
   - ドラッグ＆ドロップ Connection 作成（ポートごとの Handle + onConnect + 重複/自己接続防止）
-  - IREditorPanel: Interaction Rule CRUD（Participant + Spatial/Guard Condition）
+  - IREditorPanel: Interaction Rule CRUD（Participant + Spatial/Guard Condition）+ Guard Condition ExpressionBuilder統合 + Effect 編集（EffectEditor）
   - ExpressionBuilder: Expression Language ビジュアルビルダー（全12 ExprSchema 対応、再帰ツリー編集）
-  - LivePreview: WASM adapter 統合（tick/tickN/Run-Stop/snapshot/restore/transition 表示）
+  - EffectEditor: 全5種 Effect 編集（Signal/HitStop/SlowMotion/TimeScale/SetContext）
+  - NamedTablesPanel: Named Table CRUD + JSON エントリ編集
+  - Port Kind 選択（Input/Output/ContinuousInput/ContinuousOutput）
+  - LivePreview: WASM adapter 統合（WasmAdapterBridge + tick/tickN/Run-Stop/snapshot/restore/transition 表示）
 
 ### 次のフェーズ候補
 - **Phase 8**: デバッガー機能強化

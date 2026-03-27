@@ -7,6 +7,7 @@ import type {
   PortSchema,
   PipelineStepSchema,
   InteractionRuleSchema,
+  NamedTableSchema,
 } from "../generated/schema";
 import { emptySchema, newSmSchema } from "../generated/schema";
 
@@ -32,6 +33,7 @@ export interface EditorStore {
   // Transition CRUD
   addTransition(smId: number, transition: TransitionSchema): void;
   removeTransition(smId: number, transitionId: number): void;
+  updateTransition(smId: number, transitionId: number, patch: Partial<Omit<TransitionSchema, "id">>): void;
 
   // Connection CRUD
   addConnection(connection: ConnectionSchema): void;
@@ -42,6 +44,7 @@ export interface EditorStore {
   // Pipeline CRUD
   addPipelineStep(connectionId: number, step: PipelineStepSchema): void;
   removePipelineStep(connectionId: number, index: number): void;
+  updatePipelineStep(connectionId: number, index: number, step: PipelineStepSchema): void;
 
   // Port CRUD
   addPort(smId: number, direction: "input" | "output", port: PortSchema): void;
@@ -51,6 +54,11 @@ export interface EditorStore {
   removeInteractionRule(id: number): void;
   updateInteractionRule(id: number, patch: Partial<Omit<InteractionRuleSchema, "id">>): void;
   selectInteractionRule(id: number | null): void;
+
+  // Named Table CRUD
+  addNamedTable(name: string): void;
+  removeNamedTable(name: string): void;
+  updateNamedTable(name: string, entries: unknown): void;
 
   // Selection
   selectSm(id: number | null): void;
@@ -179,6 +187,18 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     }));
   },
 
+  updateTransition(smId, transitionId, patch) {
+    set((s) => ({
+      schema: updateSm(s.schema, smId, (sm) => ({
+        ...sm,
+        transitions: sm.transitions.map((t) =>
+          t.id === transitionId ? { ...t, ...patch } : t,
+        ),
+      })),
+      dirty: true,
+    }));
+  },
+
   addConnection(connection) {
     set((s) => ({
       schema: {
@@ -262,6 +282,16 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     }));
   },
 
+  updatePipelineStep(connectionId, index, step) {
+    set((s) => ({
+      schema: updateConnection(s.schema, connectionId, (c) => ({
+        ...c,
+        pipeline: c.pipeline.map((s, i) => (i === index ? step : s)),
+      })),
+      dirty: true,
+    }));
+  },
+
   addPort(smId, direction, port) {
     set((s) => ({
       schema: updateSm(s.schema, smId, (sm) => ({
@@ -311,6 +341,38 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         ...s.schema,
         interaction_rules: s.schema.interaction_rules.map((r) =>
           r.id === id ? { ...r, ...patch } : r,
+        ),
+      },
+      dirty: true,
+    }));
+  },
+
+  addNamedTable(name) {
+    set((s) => ({
+      schema: {
+        ...s.schema,
+        named_tables: [...s.schema.named_tables, { name, entries: [] }],
+      },
+      dirty: true,
+    }));
+  },
+
+  removeNamedTable(name) {
+    set((s) => ({
+      schema: {
+        ...s.schema,
+        named_tables: s.schema.named_tables.filter((t) => t.name !== name),
+      },
+      dirty: true,
+    }));
+  },
+
+  updateNamedTable(name, entries) {
+    set((s) => ({
+      schema: {
+        ...s.schema,
+        named_tables: s.schema.named_tables.map((t) =>
+          t.name === name ? { ...t, entries } : t,
         ),
       },
       dirty: true,

@@ -139,4 +139,74 @@ describe("IREditorPanel", () => {
     expect(screen.getByText(/SM\(1\)/)).toBeInTheDocument();
     expect(screen.getByText(/State 2/)).toBeInTheDocument();
   });
+
+  // --- Guard condition expression editing ---
+  it("Guard condition shows ExpressionBuilder", async () => {
+    useEditorStore.getState().addInteractionRule();
+    useEditorStore.getState().selectInteractionRule(1);
+    useEditorStore.getState().updateInteractionRule(1, {
+      conditions: [{ kind: "Guard", expr: { Bool: true } }],
+    });
+
+    render(<IREditorPanel />);
+    // "Guard" appears in the condition label and in the dropdown option
+    expect(screen.getAllByText("Guard").length).toBeGreaterThanOrEqual(1);
+    // ExpressionBuilder should be present
+    expect(screen.getByLabelText("expression type")).toBeInTheDocument();
+  });
+
+  it("Guard condition expression can be edited", async () => {
+    const user = userEvent.setup();
+    useEditorStore.getState().addInteractionRule();
+    useEditorStore.getState().selectInteractionRule(1);
+    useEditorStore.getState().updateInteractionRule(1, {
+      conditions: [{ kind: "Guard", expr: { Bool: true } }],
+    });
+
+    render(<IREditorPanel />);
+
+    // Change expression type from Bool to Num
+    await user.selectOptions(screen.getByLabelText("expression type"), "Num");
+
+    const rule = useEditorStore.getState().schema.interaction_rules[0];
+    expect(rule.conditions[0].kind).toBe("Guard");
+    if (rule.conditions[0].kind === "Guard") {
+      expect("Num" in rule.conditions[0].expr).toBe(true);
+    }
+  });
+
+  // --- IR Effect editing ---
+  it("shows no effects message initially", async () => {
+    const user = userEvent.setup();
+    render(<IREditorPanel />);
+    await user.click(screen.getByRole("button", { name: /add ir/i }));
+    await user.click(screen.getByText(/IR\(1\)/));
+    expect(screen.getByText("No effects")).toBeInTheDocument();
+  });
+
+  it("Add Effect button adds an effect to the IR", async () => {
+    const user = userEvent.setup();
+    render(<IREditorPanel />);
+    await user.click(screen.getByRole("button", { name: /add ir/i }));
+    await user.click(screen.getByText(/IR\(1\)/));
+    await user.click(screen.getByText("Add Effect"));
+
+    const rule = useEditorStore.getState().schema.interaction_rules[0];
+    expect(rule.effects).toHaveLength(1);
+  });
+
+  it("can remove an effect from an IR", async () => {
+    useEditorStore.getState().addInteractionRule();
+    useEditorStore.getState().selectInteractionRule(1);
+    useEditorStore.getState().updateInteractionRule(1, {
+      effects: [{ HitStop: { frames: 3 } }],
+    });
+
+    const user = userEvent.setup();
+    render(<IREditorPanel />);
+
+    await user.click(screen.getByLabelText("remove effect"));
+    const rule = useEditorStore.getState().schema.interaction_rules[0];
+    expect(rule.effects).toHaveLength(0);
+  });
 });

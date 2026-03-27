@@ -155,4 +155,82 @@ describe("ConnectionEditorPanel", () => {
     expect(conn.pipeline).toHaveLength(1);
     expect("Filter" in conn.pipeline[0]).toBe(true);
   });
+
+  // --- Pipeline step content editing ---
+  it("clicking a pipeline step expands its detail editor", async () => {
+    const user = userEvent.setup();
+    useEditorStore.getState().loadSchema(schemaWithPipeline);
+    useEditorStore.getState().selectConnection(1);
+    render(<ConnectionEditorPanel />);
+
+    await user.click(screen.getByLabelText("toggle step 1"));
+    // Filter step should show ExpressionBuilder
+    expect(screen.getByText("Filter expression:")).toBeInTheDocument();
+  });
+
+  it("Filter step shows ExpressionBuilder for filter expression", async () => {
+    const user = userEvent.setup();
+    useEditorStore.getState().loadSchema({
+      ...schema,
+      connections: [
+        { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [{ Filter: { Bool: true } }] },
+      ],
+    });
+    useEditorStore.getState().selectConnection(1);
+    render(<ConnectionEditorPanel />);
+
+    await user.click(screen.getByLabelText("toggle step 0"));
+    expect(screen.getByLabelText("expression type")).toBeInTheDocument();
+  });
+
+  it("Redirect step shows target port input", async () => {
+    const user = userEvent.setup();
+    useEditorStore.getState().loadSchema({
+      ...schema,
+      connections: [
+        { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [{ Redirect: 5 }] },
+      ],
+    });
+    useEditorStore.getState().selectConnection(1);
+    render(<ConnectionEditorPanel />);
+
+    await user.click(screen.getByLabelText("toggle step 0"));
+    const portInput = screen.getByLabelText("redirect port") as HTMLInputElement;
+    expect(portInput.value).toBe("5");
+  });
+
+  it("editing Redirect port updates the store", async () => {
+    const user = userEvent.setup();
+    useEditorStore.getState().loadSchema({
+      ...schema,
+      connections: [
+        { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [{ Redirect: 5 }] },
+      ],
+    });
+    useEditorStore.getState().selectConnection(1);
+    render(<ConnectionEditorPanel />);
+
+    await user.click(screen.getByLabelText("toggle step 0"));
+    const portInput = screen.getByLabelText("redirect port");
+    await user.clear(portInput);
+    await user.type(portInput, "10");
+
+    const conn = useEditorStore.getState().schema.connections[0];
+    expect(conn.pipeline[0]).toEqual({ Redirect: 10 });
+  });
+
+  it("Transform step shows field mapping editor", async () => {
+    const user = userEvent.setup();
+    useEditorStore.getState().loadSchema({
+      ...schema,
+      connections: [
+        { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [{ Transform: { damage: { Num: 10 } } }] },
+      ],
+    });
+    useEditorStore.getState().selectConnection(1);
+    render(<ConnectionEditorPanel />);
+
+    await user.click(screen.getByLabelText("toggle step 0"));
+    expect(screen.getByText("damage:")).toBeInTheDocument();
+  });
 });

@@ -417,6 +417,89 @@ describe("editorStore", () => {
     });
   });
 
+  // --- updateTransition ---
+  describe("updateTransition", () => {
+    it("updates transition priority", () => {
+      useEditorStore.getState().loadSchema(fireSchema);
+      useEditorStore.getState().updateTransition(1, 10, { priority: 99 });
+      const sm = useEditorStore.getState().schema.state_machines.find((s) => s.id === 1)!;
+      expect(sm.transitions[0].priority).toBe(99);
+      expect(useEditorStore.getState().dirty).toBe(true);
+    });
+
+    it("updates transition guard", () => {
+      useEditorStore.getState().loadSchema(fireSchema);
+      useEditorStore.getState().updateTransition(1, 10, { guard: { Bool: true } });
+      const sm = useEditorStore.getState().schema.state_machines.find((s) => s.id === 1)!;
+      expect(sm.transitions[0].guard).toEqual({ Bool: true });
+    });
+
+    it("updates transition effects", () => {
+      useEditorStore.getState().loadSchema(fireSchema);
+      useEditorStore.getState().updateTransition(1, 10, {
+        effects: [{ HitStop: { frames: 5 } }],
+      });
+      const sm = useEditorStore.getState().schema.state_machines.find((s) => s.id === 1)!;
+      expect(sm.transitions[0].effects).toHaveLength(1);
+    });
+
+    it("does not affect other transitions", () => {
+      useEditorStore.getState().loadSchema(fireSchema);
+      useEditorStore.getState().addTransition(1, { id: 11, source: 1, target: 0, priority: 5, effects: [] });
+      useEditorStore.getState().updateTransition(1, 10, { priority: 99 });
+      const sm = useEditorStore.getState().schema.state_machines.find((s) => s.id === 1)!;
+      expect(sm.transitions[1].priority).toBe(5);
+    });
+  });
+
+  // --- updatePipelineStep ---
+  describe("updatePipelineStep", () => {
+    it("replaces a pipeline step at index", () => {
+      useEditorStore.getState().loadSchema({
+        ...fireSchema,
+        connections: [
+          { id: 1, source_sm: 1, source_port: 1, target_sm: 2, target_port: 0, delay_ticks: 0, pipeline: [{ Filter: { Bool: true } }] },
+        ],
+      });
+      useEditorStore.getState().updatePipelineStep(1, 0, { Filter: { Bool: false } });
+      const conn = useEditorStore.getState().schema.connections.find((c) => c.id === 1)!;
+      expect(conn.pipeline[0]).toEqual({ Filter: { Bool: false } });
+      expect(useEditorStore.getState().dirty).toBe(true);
+    });
+  });
+
+  // --- Named Table CRUD ---
+  describe("addNamedTable", () => {
+    it("adds a named table with empty entries", () => {
+      useEditorStore.getState().addNamedTable("damage_types");
+      const tables = useEditorStore.getState().schema.named_tables;
+      expect(tables).toHaveLength(1);
+      expect(tables[0].name).toBe("damage_types");
+      expect(tables[0].entries).toEqual([]);
+      expect(useEditorStore.getState().dirty).toBe(true);
+    });
+  });
+
+  describe("removeNamedTable", () => {
+    it("removes a named table by name", () => {
+      useEditorStore.getState().addNamedTable("test");
+      useEditorStore.getState().removeNamedTable("test");
+      expect(useEditorStore.getState().schema.named_tables).toHaveLength(0);
+    });
+  });
+
+  describe("updateNamedTable", () => {
+    it("updates entries for a named table", () => {
+      useEditorStore.getState().addNamedTable("elements");
+      useEditorStore.getState().updateNamedTable("elements", [
+        { fire: 2, water: 0.5 },
+      ]);
+      const table = useEditorStore.getState().schema.named_tables.find((t) => t.name === "elements")!;
+      expect(table.entries).toEqual([{ fire: 2, water: 0.5 }]);
+      expect(useEditorStore.getState().dirty).toBe(true);
+    });
+  });
+
   // --- Export ---
   describe("exportJson", () => {
     it("returns schema as JSON string", () => {

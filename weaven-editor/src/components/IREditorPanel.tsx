@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useEditorStore } from "../stores/editorStore";
 import type { IRConditionSchema } from "../generated/schema";
+import ExpressionBuilder from "./ExpressionBuilder";
+import EffectEditor from "./EffectEditor";
+import { defaultEffect } from "./EffectEditor";
 
 export default function IREditorPanel() {
   const schema = useEditorStore((s) => s.schema);
@@ -134,22 +137,50 @@ export default function IREditorPanel() {
             {selectedRule.conditions.length === 0 ? (
               <p className="text-xs text-gray-600">No conditions</p>
             ) : (
-              <ul className="space-y-1">
+              <ul className="space-y-2">
                 {selectedRule.conditions.map((c, i) => (
-                  <li key={i} className="flex items-center justify-between text-xs text-gray-300 px-2 py-1 bg-gray-800 rounded">
-                    <span>
-                      {c.kind === "Spatial" ? `Spatial (radius: ${c.radius})` : `Guard`}
-                    </span>
-                    <button
-                      onClick={() => {
-                        const next = selectedRule.conditions.filter((_, j) => j !== i);
-                        updateInteractionRule(selectedRule.id, { conditions: next });
-                      }}
-                      className="text-red-400 hover:text-red-300"
-                      aria-label={`remove condition ${i}`}
-                    >
-                      Remove
-                    </button>
+                  <li key={i} className="flex flex-col gap-1 text-xs text-gray-300 px-2 py-1 bg-gray-800 rounded">
+                    <div className="flex items-center justify-between">
+                      <span>
+                        {c.kind === "Spatial" ? `Spatial (radius: ${c.radius})` : `Guard`}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const next = selectedRule.conditions.filter((_, j) => j !== i);
+                          updateInteractionRule(selectedRule.id, { conditions: next });
+                        }}
+                        className="text-red-400 hover:text-red-300"
+                        aria-label={`remove condition ${i}`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    {c.kind === "Spatial" && (
+                      <div className="flex items-center gap-1">
+                        <label className="text-xs text-gray-400">Radius:</label>
+                        <input
+                          type="number"
+                          value={c.radius}
+                          onChange={(e) => {
+                            const next = [...selectedRule.conditions];
+                            next[i] = { kind: "Spatial", radius: parseInt(e.target.value, 10) || 0 };
+                            updateInteractionRule(selectedRule.id, { conditions: next });
+                          }}
+                          className="w-16 px-1 py-0.5 text-xs bg-gray-900 border border-gray-600 rounded text-gray-200"
+                          aria-label={`spatial radius ${i}`}
+                        />
+                      </div>
+                    )}
+                    {c.kind === "Guard" && (
+                      <ExpressionBuilder
+                        expr={c.expr}
+                        onChange={(expr) => {
+                          const next = [...selectedRule.conditions];
+                          next[i] = { kind: "Guard", expr };
+                          updateInteractionRule(selectedRule.id, { conditions: next });
+                        }}
+                      />
+                    )}
                   </li>
                 ))}
               </ul>
@@ -193,12 +224,42 @@ export default function IREditorPanel() {
             </div>
           </section>
 
-          {/* Effects summary */}
+          {/* Effects */}
           <section>
-            <h4 className="text-xs font-medium text-gray-400 uppercase mb-1">Effects</h4>
-            <p className="text-xs text-gray-600">
-              {selectedRule.effects.length} effect(s) configured
-            </p>
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="text-xs font-medium text-gray-400 uppercase">Effects</h4>
+              <button
+                onClick={() =>
+                  updateInteractionRule(selectedRule.id, {
+                    effects: [...selectedRule.effects, defaultEffect("Signal")],
+                  })
+                }
+                className="text-xs text-indigo-400 hover:text-indigo-300"
+              >
+                Add Effect
+              </button>
+            </div>
+            {selectedRule.effects.length === 0 ? (
+              <p className="text-xs text-gray-600">No effects</p>
+            ) : (
+              <div className="space-y-2">
+                {selectedRule.effects.map((eff, i) => (
+                  <EffectEditor
+                    key={i}
+                    effect={eff}
+                    onChange={(newEff) => {
+                      const next = [...selectedRule.effects];
+                      next[i] = newEff;
+                      updateInteractionRule(selectedRule.id, { effects: next });
+                    }}
+                    onRemove={() => {
+                      const next = selectedRule.effects.filter((_, j) => j !== i);
+                      updateInteractionRule(selectedRule.id, { effects: next });
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         </div>
       )}
