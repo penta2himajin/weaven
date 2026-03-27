@@ -457,15 +457,17 @@ namespace Weaven
             var commands = new List<SystemCommand>();
             ulong tick = 0;
 
-            // Extract tick
+            // Extract tick — "tick": is 7 chars
             int tickIdx = json.IndexOf("\"tick\":", StringComparison.Ordinal);
             if (tickIdx >= 0)
             {
-                int start = tickIdx + 6;
+                int start = tickIdx + 7;
+                // Skip whitespace after colon
+                while (start < json.Length && json[start] == ' ') start++;
                 int end = start;
-                while (end < json.Length && (char.IsDigit(json[end]) || json[end] == ' '))
+                while (end < json.Length && char.IsDigit(json[end]))
                     end++;
-                if (ulong.TryParse(json.AsSpan(start, end - start).Trim(stackalloc char[] { ' ' }), out var t))
+                if (end > start && ulong.TryParse(json.AsSpan(start, end - start), out var t))
                     tick = t;
             }
 
