@@ -4,6 +4,7 @@
 //! is a zero-sized type and all collection calls are eliminated.
 
 use crate::types::{SmId, StateId, TransitionId, PortId, ConnectionId};
+use crate::expr::EvalTreeNode;
 
 // ---------------------------------------------------------------------------
 // Phase enum (matches weaven-debugger.als)
@@ -36,6 +37,8 @@ pub enum TraceEvent {
         result: bool,
         /// Context field values at evaluation time (for debugging "why did this guard fail?").
         context_snapshot: Option<Vec<(String, f64)>>,
+        /// AST evaluation tree with intermediate values (Phase 8 guard AST visualization).
+        eval_tree: Option<EvalTreeNode>,
     },
     /// Phase 2: InteractionRule matched.
     IrMatched {
@@ -75,6 +78,21 @@ pub enum TraceEvent {
         connection: Option<ConnectionId>,
         sm_id: SmId,
         port: PortId,
+    },
+    /// Phase 4: Individual signal delivered to a target SM during cascade.
+    SignalDelivered {
+        tick: u64,
+        phase: Phase,
+        /// Cascade depth at which the signal was delivered.
+        depth: u32,
+        /// SM that originally emitted the signal (via Connection or spatial routing).
+        source_sm: Option<SmId>,
+        /// Target SM receiving the signal.
+        target_sm: SmId,
+        /// Port on the target SM.
+        target_port: PortId,
+        /// Whether delivery triggered a transition.
+        triggered_transition: Option<TransitionId>,
     },
 }
 

@@ -30,6 +30,7 @@ fn make_sm_with_input_pipeline(id: SmId, input_pipeline: Vec<PipelineStep>) -> S
             id: TransitionId(id.0 * 10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("intensity") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![Port {
@@ -65,6 +66,7 @@ fn test_input_port_transform_halves_intensity() {
             id: TransitionId(10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("intensity".to_string(), 10.0);
@@ -124,6 +126,7 @@ fn test_input_port_filter_immunity() {
             id: TransitionId(10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("intensity".to_string(), 5.0);
@@ -181,6 +184,7 @@ fn test_input_port_redirect_flash_fire() {
             id: TransitionId(10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("intensity".to_string(), 5.0);
@@ -206,6 +210,7 @@ fn test_input_port_redirect_flash_fire() {
                 id: TransitionId(20),
                 source: S0, target: S1, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("intensity") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
             // Power-up path (triggered by redirect)
@@ -213,6 +218,7 @@ fn test_input_port_redirect_flash_fire() {
                 id: TransitionId(21),
                 source: S0, target: S_ALT, priority: 20,
                 guard: Some(Box::new(|ctx, _| ctx.get("boosted") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -273,6 +279,7 @@ fn test_pipeline_full_ordering_connection_then_input_port() {
             id: TransitionId(10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("intensity".to_string(), 4.0);
@@ -335,6 +342,7 @@ fn test_pipeline_chain_exhausts_and_blocks() {
             id: TransitionId(10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("intensity".to_string(), 3.0);
@@ -358,6 +366,7 @@ fn test_pipeline_chain_exhausts_and_blocks() {
             id: TransitionId(20),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("intensity") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![Port {

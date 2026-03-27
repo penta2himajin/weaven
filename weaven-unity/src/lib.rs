@@ -744,6 +744,7 @@ mod tests {
                 id: TransitionId(id.0 * 10),
                 source: StateId(0), target: StateId(1), priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("trigger") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             }],
             vec![], vec![],
@@ -813,6 +814,7 @@ mod tests {
                     id: TransitionId(10),
                     source: StateId(0), target: StateId(1), priority: 10,
                     guard: Some(Box::new(|_ctx, sig| {
+                    guard_expr: None,
                         sig.map_or(false, |s| s.payload.get("damage").copied().unwrap_or(0.0) > 0.0)
                     })),
                     effects: vec![],

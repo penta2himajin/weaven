@@ -24,6 +24,8 @@ export interface GuardEvaluated {
   readonly transition: TransitionId;
   readonly smId: SmId;
   readonly result: Bool;
+  readonly contextSnapshot: [string, number][] | null;
+  readonly evalTree: EvalTreeNode | null;
 }
 
 export interface IrMatched {
@@ -70,7 +72,18 @@ export interface PipelineFiltered {
   readonly port: PortId;
 }
 
-export type TraceEvent = GuardEvaluated | IrMatched | TransitionFired | SignalEmitted | CascadeStep | PipelineFiltered;
+export interface SignalDelivered {
+  readonly kind: "SignalDelivered";
+  readonly tick: Tick;
+  readonly phase: Phase;
+  readonly depth: Int;
+  readonly sourceSm: SmId | null;
+  readonly targetSm: SmId;
+  readonly targetPort: PortId;
+  readonly triggeredTransition: TransitionId | null;
+}
+
+export type TraceEvent = GuardEvaluated | IrMatched | TransitionFired | SignalEmitted | CascadeStep | PipelineFiltered | SignalDelivered;
 
 export type EdgeKind = "EdgeStatic" | "EdgeSpatial" | "EdgeIR";
 
@@ -94,9 +107,9 @@ export interface TopologyGraph {
 export type ExprKind = "ExprLit" | "ExprCtxRef" | "ExprSigRef" | "ExprTableRef" | "ExprBinOp" | "ExprNotOp" | "ExprIfOp" | "ExprPortRecv";
 
 export interface EvalTreeNode {
-  readonly exprKind: ExprKind;
-  readonly label: Label;
-  readonly value: EvalValue;
+  readonly exprKind: string;
+  readonly label: string;
+  readonly value: number;
   readonly children: EvalTreeNode[];
 }
 
@@ -165,4 +178,11 @@ export interface WorldState {
 export interface SmStateEntry {
   readonly smId: SmId;
   readonly activeState: StateId;
+}
+
+export interface SmStateDiff {
+  readonly smId: number;
+  readonly prevState: number;
+  readonly newState: number;
+  readonly contextChanges: Record<string, number>;
 }

@@ -41,12 +41,14 @@ fn make_parent_sm() -> SmDef {
                 id: TransitionId(10),
                 source: PARENT_A, target: PARENT_B, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("enter_b") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
             Transition {
                 id: TransitionId(11),
                 source: PARENT_B, target: PARENT_A, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("leave_b") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -71,6 +73,7 @@ fn make_sub_sm() -> SmDef {
                 id: TransitionId(20),
                 source: SUB_IDLE, target: SUB_ACTIVE, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("sub_fire") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -236,6 +239,7 @@ fn test_port_promotion_sub_event_triggers_parent_transition() {
             id: TransitionId(20),
             source: SUB_IDLE, target: SUB_ACTIVE, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("sub_fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_ctx| {
                 let p = std::collections::BTreeMap::new();
                 vec![EffectOutput::Signal(PORT_SUB_EMIT, Signal { signal_type: SIGTYPE, payload: p })]
@@ -259,6 +263,7 @@ fn test_port_promotion_sub_event_triggers_parent_transition() {
                 id: TransitionId(10),
                 source: PARENT_A, target: PARENT_B, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("enter_b") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
             // Parent transition driven by promoted port signal
@@ -266,6 +271,7 @@ fn test_port_promotion_sub_event_triggers_parent_transition() {
                 id: TransitionId(12),
                 source: PARENT_B, target: PARENT_C, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("promoted_fired") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -342,6 +348,7 @@ fn make_sub_sm_2() -> SmDef {
             id: TransitionId(30),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("sub2_fire") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![Port::new(PORT, PortKind::Input, SIGTYPE)],

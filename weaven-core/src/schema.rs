@@ -255,9 +255,10 @@ fn compile_sm(sm: &SmSchema, tables: &TableRegistry) -> SmDef {
 }
 
 fn compile_transition(t: &TransitionSchema, tables: &TableRegistry) -> Transition {
-    let guard: Option<GuardFn> = t.guard.as_ref().map(|g| {
-        let rt_expr = compile_expr(g);
-        // Clone the table registry for use inside the closure.
+    let guard_expr_ast: Option<crate::expr::Expr> = t.guard.as_ref().map(|g| compile_expr(g));
+
+    let guard: Option<GuardFn> = guard_expr_ast.as_ref().map(|rt_expr| {
+        let rt_expr = rt_expr.clone();
         let tables_clone = tables.clone();
         let guard_fn: GuardFn = Box::new(move |ctx, signal| {
             eval_guard(&rt_expr, ctx, signal.map(|s| &s.payload), &tables_clone)
@@ -275,6 +276,7 @@ fn compile_transition(t: &TransitionSchema, tables: &TableRegistry) -> Transitio
         target: StateId(t.target),
         priority: t.priority,
         guard,
+        guard_expr: guard_expr_ast,
         effects,
     }
 }

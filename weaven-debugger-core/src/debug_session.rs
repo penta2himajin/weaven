@@ -11,7 +11,7 @@ use serde::Serialize;
 use weaven_core::{
     SmId, StateId, World,
     tick::{tick, TickOutput},
-    network::{snapshot, restore, WorldSnapshot},
+    network::{snapshot, restore, diff_snapshots, WorldSnapshot, SmStateDiff},
     trace::TraceEvent,
 };
 
@@ -35,6 +35,8 @@ pub struct TickResult {
     pub tick: u64,
     pub trace_events: Vec<TraceEvent>,
     pub state_changes: Vec<StateChangeEntry>,
+    /// Per-SM diffs compared to previous tick (Phase 8: network sync diff).
+    pub diffs: Vec<SmStateDiff>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -79,8 +81,15 @@ impl DebugSession {
 
     /// Advance one tick. Returns trace events and state changes.
     pub fn tick(&mut self) -> TickResult {
+        // Snapshot before tick for diff computation.
+        let pre_snap = snapshot(&self.world);
+
         let out = tick(&mut self.world);
         let tick_num = self.world.tick;
+
+        // Compute per-SM diffs (Phase 8: network sync diff).
+        let post_snap = snapshot(&self.world);
+        let diffs = diff_snapshots(&pre_snap, &post_snap);
 
         // Save snapshot (subject to thinning).
         self.save_snapshot(tick_num);
@@ -98,6 +107,7 @@ impl DebugSession {
             state_changes: out.state_changes.iter().map(|(&sm_id, &(from, to))| {
                 StateChangeEntry { sm_id, from_state: from, to_state: to }
             }).collect(),
+            diffs,
         }
     }
 
@@ -107,6 +117,7 @@ impl DebugSession {
             tick: self.world.tick,
             trace_events: Vec::new(),
             state_changes: Vec::new(),
+            diffs: Vec::new(),
         };
         for _ in 0..n {
             last = self.tick();
@@ -232,6 +243,7 @@ mod tests {
                     target: StateId(1),
                     priority: 10,
                     guard: Some(Box::new(|ctx, _| ctx.get("go") > 0.0)),
+                    guard_expr: None,
                     effects: vec![],
                 },
             ],

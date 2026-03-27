@@ -111,10 +111,12 @@ cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
   - Port Kind 選択（Input/Output/ContinuousInput/ContinuousOutput）
   - LivePreview: WASM adapter 統合（WasmAdapterBridge + tick/tickN/Run-Stop/snapshot/restore/transition 表示）
 
+- Phase 8: デバッガー機能強化 ✅
+  - Per-signal cascade replay: SignalDelivered trace event + CascadeDetailPanel UI（深度ごとの信号追跡）
+  - Guard 評価 AST 可視化: EvalTreeNode + eval_traced() + GuardEvalTree コンポーネント（式ツリー + 中間値表示）
+  - Network sync diff ハイライト: DebugSession diff 計算 + InspectorPanel diff 表示 + TopologyCanvas ノードハイライト
+  - Rust テスト全 suite GREEN、フロントエンド 93 テスト GREEN
+
 ### 次のフェーズ候補
-- **Phase 8**: デバッガー機能強化
-  - Phase 4 Cascade replay（per-signal ステッピング）
-  - Guard 評価 AST 可視化
-  - Network sync diff ハイライト
 - **Phase 9**: 追加 Adapter（Godot, Love2D, JVM, Swift）
 - **Phase 10**: Tier 3 Network Transport（独自プロトコル）

@@ -141,6 +141,8 @@ pub struct Transition {
     pub priority: u32,
     /// None means the transition fires unconditionally when source is active.
     pub guard: Option<GuardFn>,
+    /// Original guard expression AST (for debugger eval-tree visualization).
+    pub guard_expr: Option<crate::expr::Expr>,
     pub effects: Vec<EffectFn>,
 }
 
@@ -526,6 +528,8 @@ pub struct QueuedSignal {
     pub delay:       u32,
     /// Source connection, if this signal came from a static Connection (for diagnostics).
     pub source_conn: Option<ConnectionId>,
+    /// SM that emitted this signal (for cascade tracing).
+    pub source_sm:   Option<SmId>,
 }
 
 // ---------------------------------------------------------------------------
@@ -708,6 +712,7 @@ impl World {
             signal,
             delay: 0,
             source_conn: None,
+            source_sm: None,
         });
         self.active_set.insert(target_sm);
     }

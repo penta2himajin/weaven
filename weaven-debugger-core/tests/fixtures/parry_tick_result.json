@@ -13,7 +13,8 @@
             "timer",
             1.0
           ]
-        ]
+        ],
+        "eval_tree": null
       }
     },
     {
@@ -28,7 +29,8 @@
             "parry",
             1.0
           ]
-        ]
+        ],
+        "eval_tree": null
       }
     },
     {
@@ -62,6 +64,20 @@
       "sm_id": 20,
       "from_state": 10,
       "to_state": 11
+    }
+  ],
+  "diffs": [
+    {
+      "sm_id": 10,
+      "prev_state": 0,
+      "new_state": 1,
+      "context_changes": {}
+    },
+    {
+      "sm_id": 20,
+      "prev_state": 10,
+      "new_state": 11,
+      "context_changes": {}
     }
   ]
 }

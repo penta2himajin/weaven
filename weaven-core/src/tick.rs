@@ -140,7 +140,7 @@ fn phase2_evaluate(world: &World, tc: &mut TraceCollector) -> EvaluationResult {
                 Some(d) => d,
                 None => continue,
             };
-            let decision = evaluate_sm_traced(instance, def, world.tick, sm_id, TracePhase::Evaluate, tc);
+            let decision = evaluate_sm_traced(instance, def, world.tick, sm_id, TracePhase::Evaluate, tc, &world.tables);
             map.insert(sm_id, decision);
         }
         map
@@ -158,7 +158,7 @@ fn phase2_evaluate(world: &World, tc: &mut TraceCollector) -> EvaluationResult {
                 let instance = world.instances.get(&sm_id)?;
                 let def = world.defs.get(&sm_id)?;
                 let (decision, events) =
-                    evaluate_sm_pure(instance, def, world.tick, sm_id, TracePhase::Evaluate);
+                    evaluate_sm_pure(instance, def, world.tick, sm_id, TracePhase::Evaluate, &world.tables);
                 Some((sm_id, decision, events))
             })
             .collect();
@@ -276,6 +276,7 @@ fn evaluate_sm_traced(
     sm_id: SmId,
     phase: TracePhase,
     tc: &mut TraceCollector,
+    tables: &crate::expr::TableRegistry,
 ) -> Option<TransitionId> {
     let mut candidates: Vec<&Transition> = def
         .transitions
@@ -288,9 +289,17 @@ fn evaluate_sm_traced(
     let mut winner: Option<TransitionId> = None;
 
     for t in candidates {
-        let passes = match &t.guard {
-            None => true,
-            Some(guard_fn) => guard_fn(&instance.context, signal),
+        // When guard_expr is available, produce an eval tree for AST visualization.
+        let (passes, eval_tree) = match (&t.guard, &t.guard_expr) {
+            (Some(_), Some(expr)) => {
+                let sig_payload = signal.map(|s| &s.payload);
+                let (result, tree) = crate::expr::eval_guard_traced(
+                    expr, &instance.context, sig_payload, tables,
+                );
+                (result, Some(tree))
+            }
+            (Some(guard_fn), None) => (guard_fn(&instance.context, signal), None),
+            (None, _) => (true, None),
         };
         // Capture context snapshot for debugging (only scalar fields).
         let ctx_snap: Option<Vec<(String, f64)>> = if t.guard.is_some() {
@@ -307,6 +316,7 @@ fn evaluate_sm_traced(
             sm_id,
             result: passes,
             context_snapshot: ctx_snap,
+            eval_tree,
         });
         if passes && winner.is_none() {
             winner = Some(t.id);
@@ -331,6 +341,7 @@ fn evaluate_sm_pure(
     tick: u64,
     sm_id: SmId,
     phase: TracePhase,
+    tables: &crate::expr::TableRegistry,
 ) -> (Option<TransitionId>, Vec<TraceEvent>) {
     let mut candidates: Vec<&Transition> = def
         .transitions
@@ -344,9 +355,16 @@ fn evaluate_sm_pure(
     let mut events: Vec<TraceEvent> = Vec::new();
 
     for t in candidates {
-        let passes = match &t.guard {
-            None => true,
-            Some(guard_fn) => guard_fn(&instance.context, signal),
+        let (passes, eval_tree) = match (&t.guard, &t.guard_expr) {
+            (Some(_), Some(expr)) => {
+                let sig_payload = signal.map(|s| &s.payload);
+                let (result, tree) = crate::expr::eval_guard_traced(
+                    expr, &instance.context, sig_payload, tables,
+                );
+                (result, Some(tree))
+            }
+            (Some(guard_fn), None) => (guard_fn(&instance.context, signal), None),
+            (None, _) => (true, None),
         };
         #[cfg(feature = "trace")]
         {
@@ -364,6 +382,7 @@ fn evaluate_sm_pure(
                 sm_id,
                 result: passes,
                 context_snapshot: ctx_snap,
+                eval_tree,
             });
         }
         #[cfg(not(feature = "trace"))]
@@ -477,6 +496,7 @@ fn phase3_execute(world: &mut World, eval: &mut EvaluationResult, tc: &mut Trace
             signal:      ir_sig.signal,
             delay: 0,
             source_conn: None,
+            source_sm:   None, // IR-generated signal
         });
         world.active_set.insert(ir_sig.target_sm);
         fired.insert(ir_sig.target_sm);
@@ -689,6 +709,7 @@ fn route_signal(world: &mut World, source_sm: SmId, source_port: PortId, signal:
             signal: final_signal,
             delay,
             source_conn: Some(conn_id),
+            source_sm: Some(source_sm),
         });
         if delay == 0 {
             world.active_set.insert(target_sm);
@@ -755,6 +776,7 @@ fn route_signal(world: &mut World, source_sm: SmId, source_port: PortId, signal:
             signal: signal.clone(),
             delay: 0,
             source_conn: None,
+            source_sm: Some(source_sm),
         });
         world.active_set.insert(target_sm);
     }
@@ -910,7 +932,7 @@ fn phase4_propagate(world: &mut World, fired_this_tick: &mut BTreeSet<SmId>, dia
 
             // Evaluate guards on transitions that reference this input port.
             // (In Phase 4, only signal-triggered transitions participate — §3 Phase 4.)
-            if let Some(transition_id) = evaluate_sm_traced(instance, def, world.tick, qs.target_sm, TracePhase::Propagate, tc) {
+            if let Some(transition_id) = evaluate_sm_traced(instance, def, world.tick, qs.target_sm, TracePhase::Propagate, tc, &world.tables) {
                 let t = match def.transitions.iter().find(|t| t.id == transition_id) {
                     Some(t) => t,
                     None => continue,
@@ -945,9 +967,30 @@ fn phase4_propagate(world: &mut World, fired_this_tick: &mut BTreeSet<SmId>, dia
                 for (port_id, signal) in emitted_signals {
                     cascade_emissions.push((qs.target_sm, port_id, signal));
                 }
+                // Trace: SignalDelivered (transition fired)
+                tc.push(TraceEvent::SignalDelivered {
+                    tick: world.tick,
+                    phase: TracePhase::Propagate,
+                    depth,
+                    source_sm: qs.source_sm,
+                    target_sm: qs.target_sm,
+                    target_port: final_port,
+                    triggered_transition: Some(transition_id),
+                });
             } else {
                 // No transition fired — SM consumed the signal without transitioning.
                 instance.pending_signals.clear();
+
+                // Trace: SignalDelivered (no transition)
+                tc.push(TraceEvent::SignalDelivered {
+                    tick: world.tick,
+                    phase: TracePhase::Propagate,
+                    depth,
+                    source_sm: qs.source_sm,
+                    target_sm: qs.target_sm,
+                    target_port: final_port,
+                    triggered_transition: None,
+                });
             }
 
             // SM was active this pass; keep it in Active Set.
@@ -1053,6 +1096,7 @@ fn phase5_lifecycle(world: &mut World, diag: &mut crate::error::TickDiagnostics)
                         signal: signal.clone(),
                         delay: 0,
                         source_conn: None,
+                        source_sm: Some(sm_id),
                     });
                 }
             }

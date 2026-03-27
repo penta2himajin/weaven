@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { TraceEvent } from "../generated/models";
+import type { TraceEvent, SmStateDiff } from "../generated/models";
 
 /** Lightweight SM ID wrapper matching Rust serialization. */
 export interface SmId {
@@ -11,6 +11,7 @@ export interface TickResult {
   tick: number;
   traceEvents: TraceEvent[];
   stateChanges: { smId: SmId; fromState: { inner: number }; toState: { inner: number } }[];
+  diffs: SmStateDiff[];
 }
 
 /** Mirrors Rust WorldState from Tauri commands. */
@@ -50,6 +51,7 @@ interface DebugStore {
   cascadeIndex: number;
   selectedTraceIndex: number | null;
   filterConfig: FilterConfig;
+  diffs: SmStateDiff[];
 
   // Actions
   setTopology: (topology: Topology) => void;
@@ -68,6 +70,9 @@ interface DebugStore {
   nextCascadeStep: () => void;
   prevCascadeStep: () => void;
   highlightedEdges: () => HighlightedEdge[];
+  signalsForCascadeStep: (stepIndex: number) => TraceEvent[];
+  diffForSm: (smId: number) => SmStateDiff | undefined;
+  changedSmIds: () => number[];
 }
 
 export interface FilterConfig {
@@ -91,6 +96,7 @@ export const useDebugStore = create<DebugStore>((set, get) => ({
   cascadeIndex: 0,
   selectedTraceIndex: null,
   filterConfig: { hiddenSmIds: new Set(), hiddenPhases: new Set() },
+  diffs: [],
 
   setTopology: (topology) => set({ topology, loaded: true }),
 
@@ -126,6 +132,7 @@ export const useDebugStore = create<DebugStore>((set, get) => ({
       maxTick: Math.max(state.maxTick, result.tick),
       traceEvents: result.traceEvents,
       cascadeIndex: 0,
+      diffs: result.diffs ?? [],
     })),
 
   applySeeked: (ws) =>
@@ -133,6 +140,7 @@ export const useDebugStore = create<DebugStore>((set, get) => ({
       currentTick: ws.tick,
       traceEvents: [],
       cascadeIndex: 0,
+      diffs: [],
     }),
 
   filteredTraceEvents: () => {
@@ -156,6 +164,11 @@ export const useDebugStore = create<DebugStore>((set, get) => ({
           const id = e.smId.inner ?? e.smId;
           return !hiddenSmIds.has(id);
         }
+        // SignalDelivered uses targetSm instead of smId
+        if ("targetSm" in e && e.targetSm != null) {
+          const id = e.targetSm.inner ?? e.targetSm;
+          return !hiddenSmIds.has(id);
+        }
         return true; // Keep events without smId (e.g. CascadeStep).
       });
     }
@@ -165,6 +178,9 @@ export const useDebugStore = create<DebugStore>((set, get) => ({
       result = result.filter((e: any) => {
         if ("smId" in e && e.smId != null) {
           return e.smId.inner === selectedSmId.inner;
+        }
+        if ("targetSm" in e && e.targetSm != null) {
+          return e.targetSm.inner === selectedSmId.inner;
         }
         return true;
       });
@@ -205,10 +221,13 @@ export const useDebugStore = create<DebugStore>((set, get) => ({
       if (typeof source === "number" && typeof target === "number") {
         edges.push({ source, target, kind: "signal" });
       }
+    } else if (event.kind === "SignalDelivered") {
+      const source = event.sourceSm?.inner ?? event.sourceSm;
+      const target = event.targetSm?.inner ?? event.targetSm;
+      if (typeof source === "number" && typeof target === "number") {
+        edges.push({ source, target, kind: "signal" });
+      }
     } else if (event.kind === "PipelineFiltered") {
-      // For filtered signals, we show the blocked edge.
-      // We need to find the source SM from the connection.
-      // For now, mark the target SM side as filtered.
       const targetSm = event.smId?.inner ?? event.smId;
       if (typeof targetSm === "number") {
         edges.push({ source: targetSm, target: targetSm, kind: "filtered" });
@@ -216,5 +235,31 @@ export const useDebugStore = create<DebugStore>((set, get) => ({
     }
 
     return edges;
+  },
+
+  /** Get SignalDelivered events for a specific cascade step index. */
+  signalsForCascadeStep: (stepIndex: number) => {
+    const { traceEvents } = get();
+    const steps = traceEvents.filter((e: any) => e.kind === "CascadeStep");
+    if (stepIndex < 0 || stepIndex >= steps.length) return [];
+    const step: any = steps[stepIndex];
+    const depth = step.depth;
+
+    // Return all SignalDelivered events at this depth.
+    return traceEvents.filter(
+      (e: any) => e.kind === "SignalDelivered" && e.depth === depth,
+    );
+  },
+
+  /** Get the diff for a specific SM (by raw id). */
+  diffForSm: (smId: number) => {
+    const { diffs } = get();
+    return diffs.find((d) => d.smId === smId);
+  },
+
+  /** Get all SM IDs that changed this tick. */
+  changedSmIds: () => {
+    const { diffs } = get();
+    return diffs.map((d) => d.smId);
   },
 }));

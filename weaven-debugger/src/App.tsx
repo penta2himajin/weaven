@@ -4,6 +4,7 @@ import TracePanel from "./components/TracePanel";
 import InspectorPanel from "./components/InspectorPanel";
 import TimelinePanel from "./components/TimelinePanel";
 import FilterConfigPanel from "./components/FilterConfigPanel";
+import CascadeDetailPanel from "./components/CascadeDetailPanel";
 import { useDebugStore } from "./stores/debugStore";
 
 /**
@@ -49,6 +50,9 @@ export default function App() {
           <FilterConfigPanel />
           <div className="flex-1 border-b border-gray-800 overflow-auto">
             <TracePanel />
+          </div>
+          <div className="border-b border-gray-800">
+            <CascadeDetailPanel />
           </div>
           <div className="flex-1 overflow-auto">
             <InspectorPanel />

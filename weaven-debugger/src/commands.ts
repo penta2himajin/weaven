@@ -24,6 +24,7 @@ function normalizeTickResult(raw: any) {
       fromState: normalizeId(sc.from_state ?? sc.fromState),
       toState: normalizeId(sc.to_state ?? sc.toState),
     })),
+    diffs: (raw.diffs ?? []).map(normalizeDiff),
   };
 }
 
@@ -41,6 +42,26 @@ function normalizeId(v: any): { inner: number } {
   if (typeof v === "number") return { inner: v };
   if (v && typeof v.inner === "number") return v;
   return { inner: 0 };
+}
+
+function normalizeDiff(raw: any) {
+  return {
+    smId: raw.sm_id ?? raw.smId ?? 0,
+    prevState: raw.prev_state ?? raw.prevState ?? 0,
+    newState: raw.new_state ?? raw.newState ?? 0,
+    contextChanges: raw.context_changes ?? raw.contextChanges ?? {},
+  };
+}
+
+/** Normalize an EvalTreeNode recursively from snake_case. */
+function normalizeEvalTree(raw: any): any {
+  if (!raw) return null;
+  return {
+    exprKind: raw.expr_kind ?? raw.exprKind ?? "",
+    label: raw.label ?? "",
+    value: raw.value ?? 0,
+    children: (raw.children ?? []).map(normalizeEvalTree),
+  };
 }
 
 /**
@@ -67,6 +88,7 @@ function normalizeTraceEvent(raw: any): TraceEvent {
       ...(inner.sm_id != null && { smId: normalizeId(inner.sm_id) }),
       ...(inner.result != null && { result: inner.result }),
       ...(inner.context_snapshot != null && { contextSnapshot: inner.context_snapshot }),
+      ...(inner.eval_tree != null && { evalTree: normalizeEvalTree(inner.eval_tree) }),
       // TransitionFired
       ...(inner.from_state != null && { fromState: normalizeId(inner.from_state) }),
       ...(inner.to_state != null && { toState: normalizeId(inner.to_state) }),
@@ -81,6 +103,11 @@ function normalizeTraceEvent(raw: any): TraceEvent {
       ...(inner.participants != null && { participants: new Set(inner.participants.map(normalizeId)) }),
       // PipelineFiltered
       ...(inner.connection != null && { connection: normalizeId(inner.connection) }),
+      // SignalDelivered
+      ...(inner.source_sm != null && { sourceSm: normalizeId(inner.source_sm) }),
+      ...(inner.target_sm != null && { targetSm: normalizeId(inner.target_sm) }),
+      ...(inner.target_port != null && { targetPort: normalizeId(inner.target_port) }),
+      ...(inner.triggered_transition != null && { triggeredTransition: normalizeId(inner.triggered_transition) }),
     } as any;
   }
 
