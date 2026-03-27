@@ -126,6 +126,7 @@ fn make_target_sm(id: SmId) -> SmDef {
             id: TransitionId(id.0 * 10),
             source: S_IDLE, target: S_HIT, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("hit") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         vec![Port::new(PORT_HIT, PortKind::Input, SIGTYPE)],
@@ -145,6 +146,7 @@ fn test_spatial_ir_proximity_filters_targets() {
             id: TransitionId(10),
             source: S_IDLE, target: S_HIT, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("attack") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         vec![], vec![]));
@@ -296,6 +298,7 @@ fn test_spatial_condition_blocks_out_of_range_source() {
                 id: TransitionId(id.0 * 10),
                 source: s_idle, target: s_active, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("trigger") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             }],
             vec![],
@@ -312,6 +315,7 @@ fn test_spatial_condition_blocks_out_of_range_source() {
                 id: TransitionId(id.0 * 10),
                 source: s_idle, target: s_active, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("hit") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             }],
             vec![Port::new(PORT_HIT, PortKind::Input, SIGTYPE)],
@@ -396,6 +400,7 @@ fn test_spatial_condition_skipped_when_no_source_sm() {
             id: TransitionId(210),
             source: s_idle, target: s_active, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("hit") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         vec![Port::new(PORT_HIT, PortKind::Input, SIGTYPE)],
@@ -455,6 +460,7 @@ fn make_broadcaster(id: SmId, radius: f64) -> SmDef {
             source: StateId(0), target: StateId(1),
             priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(move |_ctx| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("hit".to_string(), 1.0);
@@ -482,6 +488,7 @@ fn make_receiver(id: SmId, sig_type: SignalTypeId) -> SmDef {
             source: StateId(0), target: StateId(1),
             priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("hit") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![Port::new(PortId(88), PortKind::Input, sig_type)],
@@ -593,6 +600,7 @@ fn test_influence_radius_excludes_self() {
             source: StateId(0), target: StateId(1),
             priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("hit".to_string(), 1.0);

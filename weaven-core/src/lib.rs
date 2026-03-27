@@ -21,6 +21,7 @@ pub use tick::{tick, TickOutput};
 pub use expr::{
     Expr, BinOpKind, EvalCtx, TableRegistry, NamedTableData, TableValue,
     eval, eval_bool, eval_guard,
+    eval_traced, eval_guard_traced, EvalTreeNode,
     parse, ParseError,
 };
 pub mod network;

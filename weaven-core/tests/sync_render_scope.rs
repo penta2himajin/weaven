@@ -22,6 +22,7 @@ fn make_sm(id: SmId) -> SmDef {
             source: StateId(0), target: StateId(1),
             priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("go") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports:  vec![],

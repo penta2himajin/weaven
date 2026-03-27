@@ -24,6 +24,7 @@ fn make_tile_sm(id: SmId) -> SmDef {
                 target: STATE_BURNING,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _signal| ctx.get("intensity") > 0.0)),
+                guard_expr: None,
                 effects: vec![
                     Box::new(|ctx| {
                         let intensity = ctx.get("intensity");
@@ -40,6 +41,7 @@ fn make_tile_sm(id: SmId) -> SmDef {
                 target: STATE_BURNING,
                 priority: 1,
                 guard: None,
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -174,6 +176,7 @@ fn test_pipeline_filter_redirect() {
         target: STATE_BURNING,
         priority: 20,
         guard: Some(Box::new(|ctx, _| ctx.get("splash") > 0.0)),
+        guard_expr: None,
         effects: vec![],
     });
     world.register_sm(sm2);
@@ -239,6 +242,7 @@ fn make_tile_spatial(id: SmId) -> SmDef {
                 target: STATE_BURNING_A,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("fire_intensity") > 0.0)),
+                guard_expr: None,
                 effects: vec![
                     Box::new(|ctx| {
                         let intensity = ctx.get("fire_intensity") - 1.0;
@@ -256,6 +260,7 @@ fn make_tile_spatial(id: SmId) -> SmDef {
                 target: STATE_WET_A,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("extinguish") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -279,6 +284,7 @@ fn make_pc_sm(id: SmId) -> SmDef {
                 target: STATE_WET_A,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("extinguish") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],

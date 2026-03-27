@@ -28,6 +28,7 @@ fn make_sm_with_threshold(id: SmId, threshold: f64) -> SmDef {
             target: S1,
             priority: 10,
             guard: Some(Box::new(move |ctx, _| ctx.get("value") >= threshold)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports:  vec![Port::new(P0, PortKind::Input, SignalTypeId(0))],
@@ -133,6 +134,7 @@ fn test_parallel_phase2_priority_respected() {
                 source: S0, target: S1,
                 priority: 5, // lower
                 guard: Some(Box::new(|ctx, _| ctx.get("v") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
             Transition {
@@ -140,6 +142,7 @@ fn test_parallel_phase2_priority_respected() {
                 source: S0, target: StateId(2),
                 priority: 10, // higher — should win
                 guard: Some(Box::new(|ctx, _| ctx.get("v") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -174,6 +177,7 @@ fn make_target_sm(id: SmId) -> SmDef {
             target: StateId(12),
             priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("hit") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports:  vec![Port::new(PORT_HIT, PortKind::Input, SignalTypeId(0))],

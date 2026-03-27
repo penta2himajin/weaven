@@ -35,6 +35,7 @@ fn tile_sm(id: SmId) -> SmDef {
                 target: STATE_BURNING,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("intensity") > 0.0)),
+                guard_expr: None,
                 effects: vec![
                     Box::new(|ctx| {
                         let v = ctx.get("intensity");
@@ -210,6 +211,7 @@ fn fire_trace_phase_ordering_strict() {
         TraceEvent::SignalEmitted { phase, .. } => *phase,
         TraceEvent::CascadeStep { phase, .. } => *phase,
         TraceEvent::PipelineFiltered { phase, .. } => *phase,
+        TraceEvent::SignalDelivered { phase, .. } => *phase,
     }).collect();
 
     // All Evaluate events before all Execute events before all Propagate events.
@@ -267,10 +269,12 @@ fn parry_world() -> World {
             Transition { id: TransitionId(1000), source: ENEMY_WINDUP, target: ENEMY_ACTIVE,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("timer") > 0.0)),
+                guard_expr: None,
                 effects: vec![] },
             Transition { id: TransitionId(1001), source: ENEMY_ACTIVE, target: ENEMY_STAGGER,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("stagger") > 0.0)),
+                guard_expr: None,
                 effects: vec![] },
         ],
         input_ports: vec![Port::new(PORT_STAGGER, PortKind::Input, SIG_COMBAT)],
@@ -286,10 +290,12 @@ fn parry_world() -> World {
             Transition { id: TransitionId(2000), source: PC_IDLE, target: PC_PARRY,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("parry_input") > 0.0)),
+                guard_expr: None,
                 effects: vec![] },
             Transition { id: TransitionId(2001), source: PC_PARRY, target: PC_RIPOSTE,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("parry_ok") > 0.0)),
+                guard_expr: None,
                 effects: vec![] },
         ],
         input_ports: vec![Port::new(PORT_PARRY_OK, PortKind::Input, SIG_COMBAT)],

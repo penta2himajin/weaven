@@ -14,6 +14,7 @@ beforeEach(() => {
     traceEvents: [],
     selectedSmId: null,
     cascadeIndex: 0,
+    diffs: [],
   });
 });
 
@@ -38,13 +39,13 @@ describe("InspectorPanel", () => {
         { kind: "GuardEvaluated", tick: { inner: 1 }, phase: "Evaluate", transition: { inner: 7 }, smId: { inner: 2 }, result: true } as any,
       ],
       stateChanges: [],
+      diffs: [],
     });
     useDebugStore.getState().selectSm({ inner: 1 });
 
     render(<InspectorPanel />);
-    // Should show 2 guard evaluations for SM(1), not the one for SM(2).
-    const passMarks = screen.getAllByText("✓");
-    const failMarks = screen.getAllByText("✗");
+    const passMarks = screen.getAllByText("\u2713");
+    const failMarks = screen.getAllByText("\u2717");
     expect(passMarks).toHaveLength(1);
     expect(failMarks).toHaveLength(1);
   });
@@ -56,11 +57,12 @@ describe("InspectorPanel", () => {
         { kind: "TransitionFired", tick: { inner: 1 }, phase: "Execute", transition: { inner: 0 }, smId: { inner: 1 }, fromState: { inner: 0 }, toState: { inner: 1 } } as any,
       ],
       stateChanges: [],
+      diffs: [],
     });
     useDebugStore.getState().selectSm({ inner: 1 });
 
     render(<InspectorPanel />);
-    expect(screen.getByText(/S\(0\) → S\(1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/S\(0\).*S\(1\)/)).toBeInTheDocument();
   });
 
   it("shows 'None this tick' when no guards for selected SM", () => {
@@ -70,6 +72,7 @@ describe("InspectorPanel", () => {
         { kind: "GuardEvaluated", tick: { inner: 1 }, phase: "Evaluate", transition: { inner: 0 }, smId: { inner: 2 }, result: true } as any,
       ],
       stateChanges: [],
+      diffs: [],
     });
     useDebugStore.getState().selectSm({ inner: 99 });
 
@@ -89,5 +92,57 @@ describe("InspectorPanel", () => {
 
     expect(screen.getByText(/inject signal/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /inject/i })).toBeInTheDocument();
+  });
+
+  it("shows guard eval tree when evalTree is present", () => {
+    useDebugStore.getState().applyTickResult({
+      tick: 1,
+      traceEvents: [
+        {
+          kind: "GuardEvaluated",
+          tick: { inner: 1 },
+          phase: "Evaluate",
+          transition: { inner: 5 },
+          smId: { inner: 1 },
+          result: true,
+          evalTree: {
+            exprKind: "BinOp",
+            label: ">",
+            value: 1,
+            children: [
+              { exprKind: "CtxRef", label: "context.hp", value: 10, children: [] },
+              { exprKind: "Lit", label: "0", value: 0, children: [] },
+            ],
+          },
+        } as any,
+      ],
+      stateChanges: [],
+      diffs: [],
+    });
+    useDebugStore.getState().selectSm({ inner: 1 });
+
+    render(<InspectorPanel />);
+    expect(screen.getByTestId("guard-eval-tree")).toBeInTheDocument();
+    expect(screen.getByText(">")).toBeInTheDocument();
+    expect(screen.getByText("context.hp")).toBeInTheDocument();
+  });
+
+  it("shows network diff section when diffs are present", () => {
+    useDebugStore.getState().applyTickResult({
+      tick: 1,
+      traceEvents: [],
+      stateChanges: [],
+      diffs: [
+        { smId: 1, prevState: 0, newState: 1, contextChanges: { hp: 80 } },
+      ],
+    });
+    useDebugStore.getState().selectSm({ inner: 1 });
+
+    render(<InspectorPanel />);
+    expect(screen.getByTestId("diff-section")).toBeInTheDocument();
+    expect(screen.getByText("S(0)")).toBeInTheDocument();
+    expect(screen.getByText("S(1)")).toBeInTheDocument();
+    expect(screen.getByTestId("diff-field")).toBeInTheDocument();
+    expect(screen.getByText("hp:")).toBeInTheDocument();
   });
 });

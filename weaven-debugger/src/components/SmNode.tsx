@@ -5,19 +5,26 @@ interface SmNodeData {
   label: string;
   smId: number;
   activeState: number | null;
+  diffChanged?: boolean;
   [key: string]: unknown;
 }
 
 /** SM node — shows SM name, active state, and input/output handles. */
 function SmNodeComponent({ data, selected }: NodeProps) {
-  const { label, smId, activeState } = data as SmNodeData;
+  const { label, smId, activeState, diffChanged } = data as SmNodeData;
+
+  const borderClass = diffChanged
+    ? "border-amber-400 ring-1 ring-amber-400/50"
+    : selected
+      ? "border-indigo-400 ring-1 ring-indigo-400/50"
+      : "border-gray-700";
 
   return (
     <div
       className={`
         rounded-lg border px-3 py-2 min-w-[160px]
         bg-gray-900 shadow-lg
-        ${selected ? "border-indigo-400 ring-1 ring-indigo-400/50" : "border-gray-700"}
+        ${borderClass}
       `}
     >
       {/* Header */}

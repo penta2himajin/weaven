@@ -116,6 +116,7 @@ pub fn inject_signal(
         signal,
         delay: 0,
         source_conn: None,
+        source_sm: None,
     });
     session.world.active_set.insert(weaven_core::SmId(sm_id));
 

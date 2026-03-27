@@ -219,6 +219,145 @@ pub fn eval_guard(
 }
 
 // ---------------------------------------------------------------------------
+// EvalTreeNode — AST evaluation trace for debugger visualization (§11.3 Phase 8)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "trace", derive(serde::Serialize, serde::Deserialize))]
+pub struct EvalTreeNode {
+    pub expr_kind: String,
+    pub label: String,
+    pub value: f64,
+    pub children: Vec<EvalTreeNode>,
+}
+
+/// Evaluate an expression and produce an `EvalTreeNode` tree recording
+/// the value at every sub-expression. Used by the debugger for guard AST
+/// visualization.
+pub fn eval_traced(expr: &Expr, ctx: &EvalCtx) -> (f64, EvalTreeNode) {
+    match expr {
+        Expr::Num(n) => (*n, EvalTreeNode {
+            expr_kind: "Lit".into(), label: format!("{n}"), value: *n, children: vec![],
+        }),
+        Expr::Bool(b) => {
+            let v = if *b { 1.0 } else { 0.0 };
+            (v, EvalTreeNode { expr_kind: "Lit".into(), label: format!("{b}"), value: v, children: vec![] })
+        }
+        Expr::Str(s) => (0.0, EvalTreeNode {
+            expr_kind: "Lit".into(), label: format!("\"{s}\""), value: 0.0, children: vec![],
+        }),
+        Expr::CtxField(field) => {
+            let v = ctx.context.get(field);
+            (v, EvalTreeNode { expr_kind: "CtxRef".into(), label: format!("context.{field}"), value: v, children: vec![] })
+        }
+        Expr::SigField(field) => {
+            let v = ctx.signal.and_then(|p| p.get(field.as_str()).copied()).unwrap_or(0.0);
+            (v, EvalTreeNode { expr_kind: "SigRef".into(), label: format!("signal.{field}"), value: v, children: vec![] })
+        }
+        Expr::PortReceived(port) => {
+            let v = if ctx.received_ports.iter().any(|p| p == port) { 1.0 } else { 0.0 };
+            (v, EvalTreeNode { expr_kind: "PortRecv".into(), label: format!("port.{port}.received"), value: v, children: vec![] })
+        }
+        Expr::TableLookup { table, keys } => {
+            let mut children = Vec::new();
+            let key_strs: Vec<String> = keys.iter().map(|k| {
+                let (_, child) = eval_traced(k, ctx);
+                let s = eval_to_str(k, ctx);
+                children.push(child);
+                s
+            }).collect();
+            let key_refs: Vec<&str> = key_strs.iter().map(|s| s.as_str()).collect();
+            let v = ctx.tables.lookup(table, &key_refs).and_then(|v| v.as_f64()).unwrap_or(0.0);
+            (v, EvalTreeNode {
+                expr_kind: "TableRef".into(),
+                label: format!("table.{table}[{}]", key_strs.join("][")),
+                value: v, children,
+            })
+        }
+        Expr::BinOp { op, left, right } => {
+            let (l, lc) = eval_traced(left, ctx);
+            let (r, rc) = eval_traced(right, ctx);
+            let v = match op {
+                BinOpKind::Add => l + r,
+                BinOpKind::Sub => l - r,
+                BinOpKind::Mul => l * r,
+                BinOpKind::Div => if r != 0.0 { l / r } else { 0.0 },
+                BinOpKind::Mod => if r != 0.0 { l % r } else { 0.0 },
+                BinOpKind::Eq  => if l == r { 1.0 } else { 0.0 },
+                BinOpKind::Neq => if l != r { 1.0 } else { 0.0 },
+                BinOpKind::Lt  => if l <  r { 1.0 } else { 0.0 },
+                BinOpKind::Gt  => if l >  r { 1.0 } else { 0.0 },
+                BinOpKind::Lte => if l <= r { 1.0 } else { 0.0 },
+                BinOpKind::Gte => if l >= r { 1.0 } else { 0.0 },
+                BinOpKind::And => if l != 0.0 && r != 0.0 { 1.0 } else { 0.0 },
+                BinOpKind::Or  => if l != 0.0 || r != 0.0 { 1.0 } else { 0.0 },
+            };
+            let op_str = match op {
+                BinOpKind::Add => "+", BinOpKind::Sub => "-",
+                BinOpKind::Mul => "*", BinOpKind::Div => "/", BinOpKind::Mod => "%",
+                BinOpKind::Eq => "==", BinOpKind::Neq => "!=",
+                BinOpKind::Lt => "<", BinOpKind::Gt => ">",
+                BinOpKind::Lte => "<=", BinOpKind::Gte => ">=",
+                BinOpKind::And => "AND", BinOpKind::Or => "OR",
+            };
+            (v, EvalTreeNode { expr_kind: "BinOp".into(), label: op_str.into(), value: v, children: vec![lc, rc] })
+        }
+        Expr::Not(inner) => {
+            let (iv, ic) = eval_traced(inner, ctx);
+            let v = if iv == 0.0 { 1.0 } else { 0.0 };
+            (v, EvalTreeNode { expr_kind: "NotOp".into(), label: "NOT".into(), value: v, children: vec![ic] })
+        }
+        Expr::If { cond, then_, else_ } => {
+            let (cv, cc) = eval_traced(cond, ctx);
+            let (bv, bc) = if cv != 0.0 {
+                eval_traced(then_, ctx)
+            } else {
+                eval_traced(else_, ctx)
+            };
+            (bv, EvalTreeNode { expr_kind: "IfOp".into(), label: "if".into(), value: bv, children: vec![cc, bc] })
+        }
+        Expr::CollectionAny { array_field, predicate } => {
+            let elements = ctx.context.get_array(array_field);
+            let found = elements.iter().any(|elem| {
+                let child_ctx = EvalCtx { context: ctx.context, signal: Some(elem), received_ports: ctx.received_ports, tables: ctx.tables };
+                eval_bool(predicate, &child_ctx)
+            });
+            let v = if found { 1.0 } else { 0.0 };
+            (v, EvalTreeNode { expr_kind: "BinOp".into(), label: format!("{array_field}.any(...)"), value: v, children: vec![] })
+        }
+        Expr::CollectionCount { array_field, predicate } => {
+            let elements = ctx.context.get_array(array_field);
+            let v = elements.iter().filter(|elem| {
+                let child_ctx = EvalCtx { context: ctx.context, signal: Some(elem), received_ports: ctx.received_ports, tables: ctx.tables };
+                eval_bool(predicate, &child_ctx)
+            }).count() as f64;
+            (v, EvalTreeNode { expr_kind: "BinOp".into(), label: format!("{array_field}.count(...)"), value: v, children: vec![] })
+        }
+        Expr::CollectionSum { array_field, sum_field } => {
+            let elements = ctx.context.get_array(array_field);
+            let v: f64 = elements.iter().map(|elem| elem.get(sum_field).copied().unwrap_or(0.0)).sum();
+            (v, EvalTreeNode { expr_kind: "BinOp".into(), label: format!("{array_field}.sum({sum_field})"), value: v, children: vec![] })
+        }
+    }
+}
+
+/// Convenience: evaluate a guard expression with AST trace.
+pub fn eval_guard_traced(
+    expr: &Expr,
+    context: &Context,
+    signal: Option<&BTreeMap<String, f64>>,
+    tables: &TableRegistry,
+) -> (bool, EvalTreeNode) {
+    let (v, tree) = eval_traced(expr, &EvalCtx {
+        context,
+        signal,
+        received_ports: &[],
+        tables,
+    });
+    (v != 0.0, tree)
+}
+
+// ---------------------------------------------------------------------------
 // §11.1 Expression Language — Formal Grammar (BNF) and Parser
 //
 // Grammar (recursive descent, operator precedence encoded in rule hierarchy):

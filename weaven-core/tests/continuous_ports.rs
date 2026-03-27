@@ -21,6 +21,7 @@ fn make_speed_sm(id: SmId) -> SmDef {
             id: TransitionId(id.0 * 10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("speed") > 5.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         vec![], vec![],
@@ -66,6 +67,7 @@ fn test_multiple_continuous_inputs_same_sm() {
             guard: Some(Box::new(|ctx, _| {
                 ctx.get("vel_x") * ctx.get("vel_x") + ctx.get("vel_y") * ctx.get("vel_y") > 25.0
             })),
+            guard_expr: None,
             effects: vec![],
         }],
         vec![], vec![],
@@ -189,6 +191,7 @@ fn test_continuous_output_reflects_post_transition_context() {
         vec![Transition {
             id: TransitionId(10), source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("trigger") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|ctx| {
                 ctx.set("score", 100.0);
                 vec![]

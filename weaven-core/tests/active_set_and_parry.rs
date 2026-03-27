@@ -22,6 +22,7 @@ fn make_two_state_sm(id: SmId, trigger_key: &'static str) -> SmDef {
                 target: S1,
                 priority: 10,
                 guard: Some(Box::new(move |ctx, _| ctx.get(trigger_key) > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -87,6 +88,7 @@ fn test_sm_with_deferred_signal_stays_active() {
             id: TransitionId(10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_ctx| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("v".to_string(), 1.0);
@@ -107,6 +109,7 @@ fn test_sm_with_deferred_signal_stays_active() {
             id: TransitionId(20),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("v") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![Port::new(PORT_IN, PortKind::Input, SIGTYPE)],
@@ -209,6 +212,7 @@ fn make_enemy_sm(id: SmId) -> SmDef {
                 source: ENEMY_WINDUP, target: ENEMY_ACTIVEFRAME,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("timer_expired") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
             // ActiveFrame → Staggered on StaggerIn signal
@@ -217,6 +221,7 @@ fn make_enemy_sm(id: SmId) -> SmDef {
                 source: ENEMY_ACTIVEFRAME, target: ENEMY_STAGGERED,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("stagger") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -242,6 +247,7 @@ fn make_pc_sm(id: SmId) -> SmDef {
                 source: PC_IDLE, target: PC_PARRY,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("parry_input") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
             // Parry → Riposte on ParrySuccess signal
@@ -250,6 +256,7 @@ fn make_pc_sm(id: SmId) -> SmDef {
                 source: PC_PARRY, target: PC_RIPOSTE,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("parry_success") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],

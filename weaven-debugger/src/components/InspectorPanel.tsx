@@ -1,11 +1,14 @@
 import { useDebugStore } from "../stores/debugStore";
 import InjectSignalForm from "./InjectSignalForm";
+import GuardEvalTree from "./GuardEvalTree";
 
 export default function InspectorPanel() {
   const selectedSmId = useDebugStore((s) => s.selectedSmId);
   const filteredTraceEvents = useDebugStore((s) => s.filteredTraceEvents);
-  // Subscribe to traceEvents to trigger re-render when tick updates them.
+  const diffForSm = useDebugStore((s) => s.diffForSm);
+  // Subscribe to traceEvents and diffs to trigger re-render.
   useDebugStore((s) => s.traceEvents);
+  useDebugStore((s) => s.diffs);
 
   if (!selectedSmId) {
     return (
@@ -29,6 +32,8 @@ export default function InspectorPanel() {
   const smIdDisplay = typeof selectedSmId === "object" && "inner" in selectedSmId
     ? (selectedSmId as any).inner
     : selectedSmId;
+
+  const diff = diffForSm(smIdDisplay as number);
 
   return (
     <div className="flex flex-col h-full">
@@ -54,15 +59,19 @@ export default function InspectorPanel() {
               {guardEvents.map((e: any, i: number) => {
                 const tid = e.transition?.inner ?? e.transition;
                 const snapshot: [string, number][] | null = e.contextSnapshot ?? null;
+                const evalTree = e.evalTree ?? null;
                 return (
                   <div key={i} className="space-y-0.5">
                     <div className="flex items-center gap-2 text-xs font-mono">
                       <span className={e.result ? "text-emerald-400" : "text-red-400"}>
-                        {e.result ? "✓" : "✗"}
+                        {e.result ? "\u2713" : "\u2717"}
                       </span>
                       <span className="text-gray-400">T({String(tid)})</span>
                     </div>
-                    {!e.result && snapshot && snapshot.length > 0 && (
+                    {evalTree && (
+                      <GuardEvalTree tree={evalTree} />
+                    )}
+                    {!evalTree && !e.result && snapshot && snapshot.length > 0 && (
                       <div className="ml-4 pl-2 border-l border-gray-700 space-y-0.5">
                         {snapshot.map(([k, v]) => (
                           <div key={k} className="flex gap-2 text-[10px] font-mono text-gray-500">
@@ -93,13 +102,38 @@ export default function InspectorPanel() {
                 const to = e.toState?.inner ?? e.toState;
                 return (
                   <div key={i} className="text-xs font-mono text-gray-300">
-                    S({String(from)}) → S({String(to)})
+                    S({String(from)}) {"\u2192"} S({String(to)})
                   </div>
                 );
               })}
             </div>
           )}
         </section>
+
+        {/* Network sync diff */}
+        {diff && (
+          <section data-testid="diff-section">
+            <h3 className="text-[10px] font-semibold text-gray-500 uppercase mb-1">
+              Network Diff
+            </h3>
+            <div className="space-y-1">
+              {diff.prevState !== diff.newState && (
+                <div className="text-[10px] font-mono">
+                  <span className="text-gray-500">state: </span>
+                  <span className="text-red-400">S({diff.prevState})</span>
+                  <span className="text-gray-600"> {"\u2192"} </span>
+                  <span className="text-emerald-400">S({diff.newState})</span>
+                </div>
+              )}
+              {Object.entries(diff.contextChanges).map(([k, v]) => (
+                <div key={k} className="flex gap-2 text-[10px] font-mono" data-testid="diff-field">
+                  <span className="text-gray-500">{k}:</span>
+                  <span className="text-amber-400">{String(v)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* Inject signal form */}

@@ -34,6 +34,7 @@ fn test_stale_signal_purged_on_despawn() {
         vec![Transition {
             id: TransitionId(10), source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_| vec![
                 EffectOutput::Signal(PORT_OUT, sig("hit", 1.0))
             ])],
@@ -45,6 +46,7 @@ fn test_stale_signal_purged_on_despawn() {
         vec![Transition {
             id: TransitionId(20), source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("hit") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         vec![Port::new(PORT_IN, PortKind::Input, SIGTYPE)], vec![],
@@ -114,11 +116,11 @@ fn make_parent() -> SmDef {
     SmDef::new(PARENT_SM, [PARENT_A, PARENT_B], PARENT_A, vec![
         Transition {
             id: TransitionId(100), source: PARENT_A, target: PARENT_B, priority: 10,
-            guard: Some(Box::new(|ctx, _| ctx.get("go") > 0.0)), effects: vec![],
+            guard: Some(Box::new(|ctx, _| ctx.get("go") > 0.0)), guard_expr: None, effects: vec![],
         },
         Transition {
             id: TransitionId(101), source: PARENT_B, target: PARENT_A, priority: 10,
-            guard: Some(Box::new(|ctx, _| ctx.get("back") > 0.0)), effects: vec![],
+            guard: Some(Box::new(|ctx, _| ctx.get("back") > 0.0)), guard_expr: None, effects: vec![],
         },
     ], vec![], vec![])
 }
@@ -217,6 +219,7 @@ fn make_loop_sm(id: SmId, next_id: SmId, port_out: PortId, port_in: PortId) -> S
         Transition {
             id: TransitionId(id.0 * 100), source: S0, target: S0, priority: 10,
             guard: Some(Box::new(move |ctx, _| ctx.get("ping") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(move |_| vec![
                 EffectOutput::Signal(port_out, sig("ping", 1.0))
             ])],
@@ -303,6 +306,7 @@ fn test_no_cascade_overflow_normal_operation() {
         Transition {
             id: TransitionId(10), source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("trigger") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_| vec![
                 EffectOutput::Signal(PORT_OUT, sig("ping", 1.0))
             ])],
@@ -313,6 +317,7 @@ fn test_no_cascade_overflow_normal_operation() {
         Transition {
             id: TransitionId(20), source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("ping") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }
     ], vec![Port::new(PORT_IN, PortKind::Input, SIGTYPE)], vec![]));

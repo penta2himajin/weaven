@@ -28,6 +28,7 @@ fn simple_sm(id: SmId) -> SmDef {
                 target: S_ACTIVE,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _sig| ctx.get("trigger") > 0.0)),
+                guard_expr: None,
                 effects: vec![
                     Box::new(|_ctx| {
                         let mut payload = std::collections::BTreeMap::new();
@@ -42,6 +43,7 @@ fn simple_sm(id: SmId) -> SmDef {
                 target: S_DONE,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _sig| ctx.get("trigger") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -86,6 +88,7 @@ fn setup_world() -> World {
         },
         delay: 0,
         source_conn: None,
+        source_sm: None,
     });
     world.active_set.insert(sm_a);
 
@@ -188,6 +191,7 @@ fn trace_events_phase_ordering() {
         TraceEvent::SignalEmitted { phase, .. } => *phase,
         TraceEvent::CascadeStep { phase, .. } => *phase,
         TraceEvent::PipelineFiltered { phase, .. } => *phase,
+        TraceEvent::SignalDelivered { phase, .. } => *phase,
     }).collect();
 
     // Find last Evaluate event and first Execute event
@@ -264,6 +268,7 @@ fn tile_sm(id: SmId) -> SmDef {
                 target: S_BURNING,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("intensity") > 0.0)),
+                guard_expr: None,
                 effects: vec![
                     Box::new(|ctx| {
                         let v = ctx.get("intensity");

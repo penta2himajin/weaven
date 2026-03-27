@@ -13,7 +13,8 @@
             "intensity",
             3.0
           ]
-        ]
+        ],
+        "eval_tree": null
       }
     },
     {
@@ -44,6 +45,17 @@
       }
     },
     {
+      "SignalDelivered": {
+        "tick": 1,
+        "phase": "Propagate",
+        "depth": 1,
+        "source_sm": null,
+        "target_sm": 1,
+        "target_port": 0,
+        "triggered_transition": null
+      }
+    },
+    {
       "GuardEvaluated": {
         "tick": 1,
         "phase": "Propagate",
@@ -55,7 +67,8 @@
             "intensity",
             2.0
           ]
-        ]
+        ],
+        "eval_tree": null
       }
     },
     {
@@ -66,6 +79,17 @@
         "sm_id": 2,
         "from_state": 0,
         "to_state": 1
+      }
+    },
+    {
+      "SignalDelivered": {
+        "tick": 1,
+        "phase": "Propagate",
+        "depth": 1,
+        "source_sm": 1,
+        "target_sm": 2,
+        "target_port": 0,
+        "triggered_transition": 20
       }
     },
     {
@@ -97,7 +121,8 @@
             "intensity",
             1.0
           ]
-        ]
+        ],
+        "eval_tree": null
       }
     },
     {
@@ -108,6 +133,17 @@
         "sm_id": 3,
         "from_state": 0,
         "to_state": 1
+      }
+    },
+    {
+      "SignalDelivered": {
+        "tick": 1,
+        "phase": "Propagate",
+        "depth": 2,
+        "source_sm": 2,
+        "target_sm": 3,
+        "target_port": 0,
+        "triggered_transition": 30
       }
     }
   ],
@@ -126,6 +162,30 @@
       "sm_id": 3,
       "from_state": 0,
       "to_state": 1
+    }
+  ],
+  "diffs": [
+    {
+      "sm_id": 1,
+      "prev_state": 0,
+      "new_state": 1,
+      "context_changes": {}
+    },
+    {
+      "sm_id": 2,
+      "prev_state": 0,
+      "new_state": 1,
+      "context_changes": {
+        "intensity": 2.0
+      }
+    },
+    {
+      "sm_id": 3,
+      "prev_state": 0,
+      "new_state": 1,
+      "context_changes": {
+        "intensity": 1.0
+      }
     }
   ]
 }

@@ -101,9 +101,11 @@ export default function TopologyCanvas() {
   const topology = useDebugStore((s) => s.topology);
   const selectSm = useDebugStore((s) => s.selectSm);
   const highlightedEdges = useDebugStore((s) => s.highlightedEdges);
-  // Subscribe to dependencies of highlightedEdges() to trigger re-render.
+  const changedSmIds = useDebugStore((s) => s.changedSmIds);
+  // Subscribe to dependencies of highlightedEdges() and changedSmIds() to trigger re-render.
   useDebugStore((s) => s.selectedTraceIndex);
   useDebugStore((s) => s.traceEvents);
+  useDebugStore((s) => s.diffs);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -121,6 +123,24 @@ export default function TopologyCanvas() {
     [edges, highlights],
   );
 
+  // Apply diff highlighting to nodes (border glow for changed SMs).
+  const changed = changedSmIds();
+  const changedSet = useMemo(() => new Set(changed), [changed]);
+  const styledNodes = useMemo(
+    () =>
+      nodes.map((n) => {
+        const smId = n.data?.smId as number | undefined;
+        if (smId != null && changedSet.has(smId)) {
+          return {
+            ...n,
+            data: { ...n.data, diffChanged: true },
+          };
+        }
+        return n;
+      }),
+    [nodes, changedSet],
+  );
+
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       const smId = node.data?.smId as number | undefined;
@@ -134,7 +154,7 @@ export default function TopologyCanvas() {
   return (
     <div className="h-full w-full">
       <ReactFlow
-        nodes={nodes}
+        nodes={styledNodes}
         edges={styledEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}

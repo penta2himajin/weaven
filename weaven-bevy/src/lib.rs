@@ -247,6 +247,7 @@ mod tests {
                 id: TransitionId(id.0 * 10),
                 source: StateId(0), target: StateId(1), priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("trigger") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             }],
             vec![], vec![],
@@ -648,6 +649,7 @@ mod adapter_tests {
                 id: TransitionId(10),
                 source: StateId(0), target: StateId(1), priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("trigger") > 0.0)),
+                guard_expr: None,
                 effects: vec![Box::new(|_| {
                     let mut p = std::collections::BTreeMap::new();
                     p.insert("element".to_string(), 1.0); // fire=1
@@ -671,6 +673,7 @@ mod adapter_tests {
                 id: TransitionId(30),
                 source: StateId(0), target: StateId(1), priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("element") > 0.0)),
+                guard_expr: None,
                 effects: vec![],
             }],
             input_ports:  vec![Port::new(port_in, PortKind::Input, sig)],
@@ -715,6 +718,7 @@ mod adapter_tests {
                 id: TransitionId(10),
                 source: StateId(0), target: StateId(1), priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("hp") <= 0.0 && ctx.get("hp") >= -999.0)),
+                guard_expr: None,
                 effects: vec![],
             }],
             vec![], vec![],

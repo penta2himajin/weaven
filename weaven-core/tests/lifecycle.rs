@@ -52,6 +52,7 @@ fn make_necro_sm() -> SmDef {
                 id: TransitionId(10),
                 source: NECRO_IDLE, target: NECRO_SUMMONED, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("summon") > 0.0)),
+                guard_expr: None,
                 effects: vec![],  // spawn issued externally in test
             },
         ],
@@ -74,6 +75,7 @@ fn make_skeleton_sm() -> SmDef {
                 id: TransitionId(20),
                 source: SKEL_ALIVE, target: SKEL_DEAD, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("hp") <= 0.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -90,6 +92,7 @@ fn make_skeleton_sm() -> SmDef {
                 id: TransitionId(99),
                 source: SKEL_DEAD, target: SKEL_DEAD, priority: 1,
                 guard: None,
+                guard_expr: None,
                 effects: vec![Box::new(|_ctx| {
                     let mut p = std::collections::BTreeMap::new();
                     p.insert("damage".to_string(), 50.0);
@@ -113,6 +116,7 @@ fn make_enemy_sm() -> SmDef {
                 id: TransitionId(30),
                 source: ENEMY_ALIVE, target: ENEMY_DESTROYED, priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("damage") >= 1.0)),
+                guard_expr: None,
                 effects: vec![],
             },
         ],
@@ -242,6 +246,7 @@ fn test_multiple_simultaneous_despawns_batch_delivered() {
             id: TransitionId(40),
             source: SKEL_ALIVE, target: SKEL_DEAD, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("hp") <= 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![],
@@ -250,6 +255,7 @@ fn test_multiple_simultaneous_despawns_batch_delivered() {
             id: TransitionId(98),
             source: SKEL_DEAD, target: SKEL_DEAD, priority: 1,
             guard: None,
+            guard_expr: None,
             effects: vec![Box::new(|_ctx| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("damage".to_string(), 50.0);
@@ -268,6 +274,7 @@ fn test_multiple_simultaneous_despawns_batch_delivered() {
             id: TransitionId(50),
             source: ENEMY_ALIVE, target: ENEMY_DESTROYED, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("damage") >= 1.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![Port::new(PORT_EXPLODE_IN, PortKind::Input, SIGTYPE_EXPLODE)],

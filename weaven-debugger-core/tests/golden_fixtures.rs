@@ -42,6 +42,7 @@ fn tile_sm(id: SmId) -> SmDef {
                 target: STATE_BURNING,
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("intensity") > 0.0)),
+                guard_expr: None,
                 effects: vec![
                     Box::new(|ctx| {
                         let v = ctx.get("intensity");
@@ -136,10 +137,12 @@ fn parry_world() -> World {
             Transition { id: TransitionId(100), source: StateId(0), target: StateId(1),
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("timer") > 0.0)),
+                guard_expr: None,
                 effects: vec![] },
             Transition { id: TransitionId(101), source: StateId(1), target: StateId(2),
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("stagger") > 0.0)),
+                guard_expr: None,
                 effects: vec![] },
         ],
         input_ports: vec![Port::new(PortId(10), PortKind::Input, SignalTypeId(1))],
@@ -155,6 +158,7 @@ fn parry_world() -> World {
             Transition { id: TransitionId(200), source: StateId(10), target: StateId(11),
                 priority: 10,
                 guard: Some(Box::new(|ctx, _| ctx.get("parry") > 0.0)),
+                guard_expr: None,
                 effects: vec![] },
         ],
         input_ports: vec![Port::new(PortId(11), PortKind::Input, SignalTypeId(1))],

@@ -21,6 +21,7 @@ fn make_sm_with_cmd_effect(id: SmId, cmd: SystemCommand) -> SmDef {
             id: TransitionId(id.0 * 10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(move |_ctx| vec![EffectOutput::Cmd(cmd.clone())])],
         }],
         input_ports: vec![],
@@ -200,6 +201,7 @@ fn test_effect_emits_signal_and_command() {
             id: TransitionId(10),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("fire") > 0.0)),
+            guard_expr: None,
             effects: vec![Box::new(|_ctx| {
                 let mut p = std::collections::BTreeMap::new();
                 p.insert("hit".to_string(), 1.0);
@@ -227,6 +229,7 @@ fn test_effect_emits_signal_and_command() {
             id: TransitionId(20),
             source: S0, target: S1, priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("hit") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![Port::new(PortId(1), PortKind::Input, SIGTYPE)],

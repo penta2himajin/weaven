@@ -23,6 +23,7 @@ fn make_simple_sm(id: SmId) -> SmDef {
             target: S1,
             priority: 10,
             guard: Some(Box::new(|ctx, _| ctx.get("trigger") > 0.0)),
+            guard_expr: None,
             effects: vec![],
         }],
         input_ports: vec![Port::new(P0, PortKind::Input, SignalTypeId(0))],
