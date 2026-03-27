@@ -86,15 +86,16 @@ cp weaven-debugger-core/tests/fixtures/*.json weaven-debugger/src/test/fixtures/
 - §11 全 Open Items (11.1〜11.7) ✅
 - デバッガーツール (Tauri + React) ✅
 - Phase 5: Unity Adapter ✅
-  - `weaven-unity/` Rust FFI クレート（C ABI, cdylib）— 13テスト
+  - `weaven-unity/` Rust FFI クレート（C ABI, cdylib）— 28テスト（エッジケース含む）
   - `generated/cs/` oxidtr C# 型定義（Models.cs, Validators.cs）
-  - `WeavenNative.cs` P/Invoke 宣言（iOS __Internal / その他 weaven_unity）
-  - `WeavenWorld.cs` 高レベル C# Adapter（IDisposable, TickResult JSON パース）
+  - `WeavenNative.cs` P/Invoke 宣言 29関数（iOS __Internal / その他 weaven_unity）— Network API 含む
+  - `WeavenWorld.cs` 高レベル C# Adapter 26メソッド（IDisposable, TickResult + SystemCommand JSON パース）
+  - `Weaven.Tests/` xUnit テストプロジェクト（TickResult・Helpers・Validators）— 35テスト
 - Phase 6: Network APIs — Adapter 統合 ✅
   - Core Network APIs（§8）全関数を 4 Adapter に統合
   - `weaven-bevy`: diff, policy filter, scoped snapshot, input buffer, rewind — 17テスト
   - `weaven-wasm`: JSON シリアライズ WASM バインディング 10 メソッド — 12テスト
-  - `weaven-unity`: C ABI FFI 10 関数（diff, policy, scoped snapshot, input buffer, rewind）— 18テスト
+  - `weaven-unity`: C ABI FFI 10 関数 + C# ラッパー 10 メソッド — 28テスト（Rust FFI）
   - `weaven-browser`: TypeScript ラッパー 10 メソッド + 型定義 — 29テスト
 
 - Phase 7: Weaven Editor — ブラウザベース SM ビジュアルエディタ ✅

@@ -394,7 +394,7 @@ namespace Weaven
 
         // ── Helpers ─────────────────────────────────────────────────────
 
-        private static string DictToJson(Dictionary<string, double> dict)
+        internal static string DictToJson(Dictionary<string, double> dict)
         {
             var parts = new List<string>(dict.Count);
             foreach (var kv in dict)
@@ -404,7 +404,7 @@ namespace Weaven
             return "{" + string.Join(",", parts) + "}";
         }
 
-        private static string UintArrayToJson(uint[] ids)
+        internal static string UintArrayToJson(uint[] ids)
         {
             var parts = new string[ids.Length];
             for (int i = 0; i < ids.Length; i++)
@@ -412,7 +412,7 @@ namespace Weaven
             return "[" + string.Join(",", parts) + "]";
         }
 
-        private static uint[] ParseUintArray(string json)
+        internal static uint[] ParseUintArray(string json)
         {
             // Minimal JSON array parser for "[1,2,3]"
             json = json.Trim();
@@ -425,7 +425,7 @@ namespace Weaven
             return result;
         }
 
-        private static string Escape(string s)
+        internal static string Escape(string s)
             => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
     }
 
@@ -438,11 +438,14 @@ namespace Weaven
     {
         /// <summary>SM ID → (previous state, new state)</summary>
         public Dictionary<uint, (int Prev, int Next)> StateChanges { get; }
+        /// <summary>System commands emitted during this tick (HitStop, SlowMotion, TimeScale).</summary>
+        public IReadOnlyList<SystemCommand> SystemCommands { get; }
         public ulong Tick { get; }
 
-        private TickResult(Dictionary<uint, (int, int)> changes, ulong tick)
+        private TickResult(Dictionary<uint, (int, int)> changes, List<SystemCommand> commands, ulong tick)
         {
             StateChanges = changes;
+            SystemCommands = commands;
             Tick = tick;
         }
 
@@ -451,6 +454,7 @@ namespace Weaven
             // Minimal parser for the FFI tick output format:
             // {"state_changes":{"1":[0,1]},"system_commands":[...],"tick":1}
             var changes = new Dictionary<uint, (int, int)>();
+            var commands = new List<SystemCommand>();
             ulong tick = 0;
 
             // Extract tick
@@ -501,7 +505,123 @@ namespace Weaven
                 }
             }
 
-            return new TickResult(changes, tick);
+            // Extract system_commands
+            int cmdIdx = json.IndexOf("\"system_commands\":[", StringComparison.Ordinal);
+            if (cmdIdx >= 0)
+            {
+                int arrStart = json.IndexOf('[', cmdIdx + 18);
+                int depth = 1;
+                int pos = arrStart + 1;
+                while (pos < json.Length && depth > 0)
+                {
+                    if (json[pos] == '[') depth++;
+                    else if (json[pos] == ']') depth--;
+                    pos++;
+                }
+                string cmdArray = json.Substring(arrStart + 1, pos - arrStart - 2).Trim();
+                if (cmdArray.Length > 0)
+                    ParseSystemCommands(cmdArray, commands);
+            }
+
+            return new TickResult(changes, commands, tick);
+        }
+
+        private static void ParseSystemCommands(string cmdArray, List<SystemCommand> commands)
+        {
+            // Parse [{...},{...},...] at top-level objects
+            int i = 0;
+            while (i < cmdArray.Length)
+            {
+                int objStart = cmdArray.IndexOf('{', i);
+                if (objStart < 0) break;
+                int depth = 1;
+                int pos = objStart + 1;
+                while (pos < cmdArray.Length && depth > 0)
+                {
+                    if (cmdArray[pos] == '{') depth++;
+                    else if (cmdArray[pos] == '}') depth--;
+                    pos++;
+                }
+                string obj = cmdArray.Substring(objStart, pos - objStart);
+
+                if (obj.Contains("\"HitStop\""))
+                {
+                    int fIdx = obj.IndexOf("\"frames\":", StringComparison.Ordinal);
+                    if (fIdx >= 0)
+                    {
+                        int s = fIdx + 9;
+                        int e = s;
+                        while (e < obj.Length && (char.IsDigit(obj[e]) || obj[e] == ' ')) e++;
+                        if (uint.TryParse(obj.AsSpan(s, e - s).Trim(), out var frames))
+                            commands.Add(new SystemCommand.HitStop(frames));
+                    }
+                }
+                else if (obj.Contains("\"SlowMotion\""))
+                {
+                    double factor = 1.0;
+                    uint durationTicks = 0;
+                    int fIdx = obj.IndexOf("\"factor\":", StringComparison.Ordinal);
+                    if (fIdx >= 0)
+                    {
+                        int s = fIdx + 9;
+                        int e = s;
+                        while (e < obj.Length && (char.IsDigit(obj[e]) || obj[e] == '.' || obj[e] == '-' || obj[e] == ' ')) e++;
+                        double.TryParse(obj.AsSpan(s, e - s).Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out factor);
+                    }
+                    int dIdx = obj.IndexOf("\"duration_ticks\":", StringComparison.Ordinal);
+                    if (dIdx >= 0)
+                    {
+                        int s = dIdx + 17;
+                        int e = s;
+                        while (e < obj.Length && (char.IsDigit(obj[e]) || obj[e] == ' ')) e++;
+                        uint.TryParse(obj.AsSpan(s, e - s).Trim(), out durationTicks);
+                    }
+                    commands.Add(new SystemCommand.SlowMotion(factor, durationTicks));
+                }
+                else if (obj.Contains("\"TimeScale\""))
+                {
+                    int tsIdx = obj.IndexOf("\"TimeScale\":", StringComparison.Ordinal);
+                    if (tsIdx >= 0)
+                    {
+                        int s = tsIdx + 12;
+                        int e = s;
+                        while (e < obj.Length && (char.IsDigit(obj[e]) || obj[e] == '.' || obj[e] == '-' || obj[e] == ' ')) e++;
+                        if (double.TryParse(obj.AsSpan(s, e - s).Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var scale))
+                            commands.Add(new SystemCommand.TimeScale(scale));
+                    }
+                }
+
+                i = pos;
+            }
+        }
+    }
+
+    // ── SystemCommand ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// System commands emitted by the Weaven tick: HitStop, SlowMotion, TimeScale.
+    /// </summary>
+    public abstract class SystemCommand
+    {
+        private SystemCommand() { }
+
+        public sealed class HitStop : SystemCommand
+        {
+            public uint Frames { get; }
+            public HitStop(uint frames) { Frames = frames; }
+        }
+
+        public sealed class SlowMotion : SystemCommand
+        {
+            public double Factor { get; }
+            public uint DurationTicks { get; }
+            public SlowMotion(double factor, uint durationTicks) { Factor = factor; DurationTicks = durationTicks; }
+        }
+
+        public sealed class TimeScale : SystemCommand
+        {
+            public double Scale { get; }
+            public TimeScale(double scale) { Scale = scale; }
         }
     }
 
