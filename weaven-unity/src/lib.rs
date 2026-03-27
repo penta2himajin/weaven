@@ -814,9 +814,9 @@ mod tests {
                     id: TransitionId(10),
                     source: StateId(0), target: StateId(1), priority: 10,
                     guard: Some(Box::new(|_ctx, sig| {
-                    guard_expr: None,
                         sig.map_or(false, |s| s.payload.get("damage").copied().unwrap_or(0.0) > 0.0)
                     })),
+                    guard_expr: None,
                     effects: vec![],
                 }],
                 input_ports: vec![Port::new(PortId(0), PortKind::Input, sig)],
@@ -1149,6 +1149,194 @@ mod tests {
 
             let rc = weaven_request_despawn(h, ids.as_ptr());
             assert_eq!(rc, 0);
+
+            weaven_destroy(h);
+        }
+    }
+
+    // ── Network API edge-case / error-path tests ──────────────────────
+
+    #[test]
+    fn test_diff_snapshots_invalid_json() {
+        unsafe {
+            let h = weaven_create();
+            let bad = CString::new("not json").unwrap();
+            let good = CString::new(r#"{"tick":0,"instances":[]}"#).unwrap();
+
+            // Both bad → null
+            let r = weaven_diff_snapshots(h, bad.as_ptr(), bad.as_ptr());
+            assert!(r.is_null());
+
+            // Before bad → null
+            let r = weaven_diff_snapshots(h, bad.as_ptr(), good.as_ptr());
+            assert!(r.is_null());
+
+            // After bad → null
+            let r = weaven_diff_snapshots(h, good.as_ptr(), bad.as_ptr());
+            assert!(r.is_null());
+
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_set_network_policy_invalid_json() {
+        unsafe {
+            let h = weaven_create();
+
+            let bad = CString::new("not json").unwrap();
+            assert_eq!(weaven_set_network_policy(h, bad.as_ptr()), -1);
+
+            let bad_authority = CString::new(
+                r#"{"sm_id":1,"authority":"Invalid","sync_policy":"StateSync","reconciliation":"Snap"}"#
+            ).unwrap();
+            assert_eq!(weaven_set_network_policy(h, bad_authority.as_ptr()), -1);
+
+            let bad_sync = CString::new(
+                r#"{"sm_id":1,"authority":"Server","sync_policy":"BadPolicy","reconciliation":"Snap"}"#
+            ).unwrap();
+            assert_eq!(weaven_set_network_policy(h, bad_sync.as_ptr()), -1);
+
+            let bad_recon = CString::new(
+                r#"{"sm_id":1,"authority":"Server","sync_policy":"StateSync","reconciliation":"BadRecon"}"#
+            ).unwrap();
+            assert_eq!(weaven_set_network_policy(h, bad_recon.as_ptr()), -1);
+
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_policy_filtered_diff_invalid_json() {
+        unsafe {
+            let h = weaven_create();
+            let bad = CString::new("not json").unwrap();
+            let r = weaven_policy_filtered_diff(h, bad.as_ptr());
+            assert!(r.is_null());
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_scoped_snapshot_invalid_json() {
+        unsafe {
+            let h = weaven_create();
+            let bad = CString::new("not json").unwrap();
+            let r = weaven_scoped_snapshot(h, bad.as_ptr());
+            assert!(r.is_null());
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_scoped_snapshot_empty() {
+        unsafe {
+            let h = weaven_create();
+            (*h).world.register_sm(make_simple_sm(SmId(1)));
+
+            let empty = CString::new("[]").unwrap();
+            let r = weaven_scoped_snapshot(h, empty.as_ptr());
+            assert!(!r.is_null());
+
+            let json_str = CStr::from_ptr(r).to_str().unwrap();
+            let snap: serde_json::Value = serde_json::from_str(json_str).unwrap();
+            assert_eq!(snap["instances"].as_array().unwrap().len(), 0);
+
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_buffer_ops_without_init() {
+        unsafe {
+            let h = weaven_create();
+            (*h).world.register_sm(make_simple_sm(SmId(1)));
+
+            // apply without init → -1
+            assert_eq!(weaven_apply_buffered_inputs(h), -1);
+
+            // push without init → -1
+            let input = CString::new(
+                r#"{"tick":0,"target_sm":1,"target_port":0,"payload":{"trigger":1.0}}"#
+            ).unwrap();
+            assert_eq!(weaven_push_tagged_input(h, input.as_ptr()), -1);
+
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_rewind_without_base() {
+        unsafe {
+            let h = weaven_create();
+            (*h).world.register_sm(make_simple_sm(SmId(1)));
+
+            // No base snapshot → -1
+            assert_eq!(weaven_rewind_to(h, 0, 1), -1);
+
+            // Init buffer but still no base → -1
+            weaven_init_input_buffer(h, 10);
+            assert_eq!(weaven_rewind_to(h, 0, 1), -1);
+
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_network_policy_context_sync_and_interpolate() {
+        unsafe {
+            let h = weaven_create();
+            (*h).world.register_sm(make_simple_sm(SmId(1)));
+
+            // ContextSync policy with fields
+            let p = CString::new(
+                r#"{"sm_id":1,"authority":"Owner","sync_policy":{"ContextSync":{"fields":["hp","mp"]}},"reconciliation":{"Interpolate":{"blend_ticks":4}}}"#
+            ).unwrap();
+            assert_eq!(weaven_set_network_policy(h, p.as_ptr()), 0);
+
+            // Verify policy is stored
+            let policy = (*h).world.network_policies.get(&SmId(1)).unwrap();
+            assert!(matches!(policy.authority, Authority::Owner));
+            match &policy.sync_policy {
+                SyncPolicy::ContextSync { fields } => {
+                    assert_eq!(fields.len(), 2);
+                    assert!(fields.contains(&"hp".to_string()));
+                    assert!(fields.contains(&"mp".to_string()));
+                }
+                _ => panic!("Expected ContextSync"),
+            }
+            match &policy.reconciliation {
+                ReconciliationPolicy::Interpolate { blend_ticks } => {
+                    assert_eq!(*blend_ticks, 4);
+                }
+                _ => panic!("Expected Interpolate"),
+            }
+
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_inject_signal_invalid_payload() {
+        unsafe {
+            let h = weaven_create();
+            (*h).world.register_sm(make_simple_sm(SmId(1)));
+
+            let bad = CString::new("not json").unwrap();
+            assert_eq!(weaven_inject_signal(h, 1, 0, bad.as_ptr()), -1);
+
+            weaven_destroy(h);
+        }
+    }
+
+    #[test]
+    fn test_spawn_despawn_invalid_json() {
+        unsafe {
+            let h = weaven_create();
+
+            let bad = CString::new("not json").unwrap();
+            assert_eq!(weaven_request_spawn(h, bad.as_ptr()), -1);
+            assert_eq!(weaven_request_despawn(h, bad.as_ptr()), -1);
 
             weaven_destroy(h);
         }

@@ -259,6 +259,139 @@ namespace Weaven
                 throw new WeavenException("Failed to request despawn");
         }
 
+        // ── Network APIs (§8) ─────────────────────────────────────────
+
+        /// <summary>
+        /// Compute the diff between two snapshot JSON strings.
+        /// Returns a JSON array of state diffs.
+        /// </summary>
+        /// <exception cref="WeavenException">If either snapshot is invalid.</exception>
+        public string DiffSnapshots(string beforeJson, string afterJson)
+        {
+            ThrowIfDisposed();
+            IntPtr ptr = WeavenNative.weaven_diff_snapshots(_handle, beforeJson, afterJson);
+            if (ptr == IntPtr.Zero)
+                throw new WeavenException("Failed to diff snapshots: invalid JSON");
+            string json = Marshal.PtrToStringUTF8(ptr) ?? "[]";
+            return json;
+        }
+
+        /// <summary>
+        /// Register a network policy for an SM.
+        /// </summary>
+        /// <param name="policyJson">
+        /// JSON: {"sm_id":1,"authority":"Server","sync_policy":"StateSync","reconciliation":"Snap"}
+        /// </param>
+        /// <exception cref="WeavenException">If the policy JSON is invalid.</exception>
+        public void SetNetworkPolicy(string policyJson)
+        {
+            ThrowIfDisposed();
+            int rc = WeavenNative.weaven_set_network_policy(_handle, policyJson);
+            if (rc != 0)
+                throw new WeavenException("Failed to set network policy: invalid JSON");
+        }
+
+        /// <summary>
+        /// Filter a diff JSON array by registered network policies.
+        /// Returns the filtered diff as a JSON string.
+        /// </summary>
+        /// <exception cref="WeavenException">If the diffs JSON is invalid.</exception>
+        public string PolicyFilteredDiff(string diffsJson)
+        {
+            ThrowIfDisposed();
+            IntPtr ptr = WeavenNative.weaven_policy_filtered_diff(_handle, diffsJson);
+            if (ptr == IntPtr.Zero)
+                throw new WeavenException("Failed to filter diffs: invalid JSON");
+            string json = Marshal.PtrToStringUTF8(ptr) ?? "[]";
+            return json;
+        }
+
+        /// <summary>
+        /// Take a scoped snapshot of specific SMs only.
+        /// </summary>
+        /// <exception cref="WeavenException">If the SM IDs JSON is invalid.</exception>
+        public string ScopedSnapshot(params uint[] smIds)
+        {
+            ThrowIfDisposed();
+            string idsJson = UintArrayToJson(smIds);
+            IntPtr ptr = WeavenNative.weaven_scoped_snapshot(_handle, idsJson);
+            if (ptr == IntPtr.Zero)
+                throw new WeavenException("Failed to take scoped snapshot");
+            string json = Marshal.PtrToStringUTF8(ptr) ?? "";
+            return json;
+        }
+
+        /// <summary>
+        /// Get SM IDs within a spatial interest region (for network LOD).
+        /// </summary>
+        public uint[] InterestRegion(float cx, float cy, float radius)
+        {
+            ThrowIfDisposed();
+            IntPtr ptr = WeavenNative.weaven_interest_region(_handle, cx, cy, radius);
+            string json = Marshal.PtrToStringUTF8(ptr) ?? "[]";
+            WeavenNative.weaven_free_string(ptr);
+            return ParseUintArray(json);
+        }
+
+        // ── Input Buffer & Rewind ─────────────────────────────────────
+
+        /// <summary>
+        /// Initialise the input buffer for rollback networking.
+        /// </summary>
+        public void InitInputBuffer(uint historyDepth)
+        {
+            ThrowIfDisposed();
+            WeavenNative.weaven_init_input_buffer(_handle, historyDepth);
+        }
+
+        /// <summary>
+        /// Push a tagged input into the buffer.
+        /// </summary>
+        /// <param name="inputJson">
+        /// JSON: {"tick":0,"target_sm":1,"target_port":0,"payload":{"key":1.0}}
+        /// </param>
+        /// <exception cref="WeavenException">If the input JSON is invalid or buffer not initialised.</exception>
+        public void PushTaggedInput(string inputJson)
+        {
+            ThrowIfDisposed();
+            int rc = WeavenNative.weaven_push_tagged_input(_handle, inputJson);
+            if (rc != 0)
+                throw new WeavenException("Failed to push tagged input: invalid JSON or buffer not initialised");
+        }
+
+        /// <summary>
+        /// Apply buffered inputs for the current tick to the world.
+        /// </summary>
+        /// <exception cref="WeavenException">If the input buffer is not initialised.</exception>
+        public void ApplyBufferedInputs()
+        {
+            ThrowIfDisposed();
+            int rc = WeavenNative.weaven_apply_buffered_inputs(_handle);
+            if (rc != 0)
+                throw new WeavenException("Input buffer not initialised");
+        }
+
+        /// <summary>
+        /// Save the current world state as the rewind base snapshot.
+        /// </summary>
+        public void SaveRewindBase()
+        {
+            ThrowIfDisposed();
+            WeavenNative.weaven_save_rewind_base(_handle);
+        }
+
+        /// <summary>
+        /// Rewind to the saved base snapshot and re-simulate to current tick.
+        /// </summary>
+        /// <exception cref="WeavenException">If no base snapshot or no input buffer.</exception>
+        public void RewindTo(ulong targetTick, ulong currentTick)
+        {
+            ThrowIfDisposed();
+            int rc = WeavenNative.weaven_rewind_to(_handle, targetTick, currentTick);
+            if (rc != 0)
+                throw new WeavenException("Failed to rewind: no base snapshot or buffer not initialised");
+        }
+
         // ── Helpers ─────────────────────────────────────────────────────
 
         private static string DictToJson(Dictionary<string, double> dict)
