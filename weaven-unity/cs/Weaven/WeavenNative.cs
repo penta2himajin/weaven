@@ -100,5 +100,48 @@ namespace Weaven
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int weaven_request_despawn(IntPtr handle,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string smIdsJson);
+
+        // ── Network APIs (§8) ─────────────────────────────────────────────
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr weaven_diff_snapshots(IntPtr handle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string beforeJson,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string afterJson);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int weaven_set_network_policy(IntPtr handle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string policyJson);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr weaven_policy_filtered_diff(IntPtr handle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string diffsJson);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr weaven_scoped_snapshot(IntPtr handle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string smIdsJson);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr weaven_interest_region(IntPtr handle,
+            float cx, float cy, float radius);
+
+        // ── Input Buffer & Rewind ─────────────────────────────────────────
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void weaven_init_input_buffer(IntPtr handle,
+            uint historyDepth);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int weaven_push_tagged_input(IntPtr handle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string inputJson);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int weaven_apply_buffered_inputs(IntPtr handle);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void weaven_save_rewind_base(IntPtr handle);
+
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int weaven_rewind_to(IntPtr handle,
+            ulong targetTick, ulong currentTick);
     }
 }

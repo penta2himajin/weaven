@@ -1,0 +1,9 @@
+[package]
+name = "als2cs"
+version = "0.1.0"
+edition = "2021"
+description = "Generate C# type definitions and validators from Alloy (.als) models"
+
+[[bin]]
+name = "als2cs"
+path = "src/main.rs"

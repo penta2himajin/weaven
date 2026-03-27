@@ -21,4 +21,8 @@ Thumbs.db
 # Patches (session artifacts)
 *.patch
 
+# .NET build output
+**/bin/
+**/obj/
+
 # oxidtr is an external tool — see https://github.com/penta2himajin/oxidtr
