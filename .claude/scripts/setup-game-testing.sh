@@ -11,6 +11,8 @@ set -euo pipefail
 UNITY_VERSION="6000.3.12f1"
 UNITY_CHANGESET="fca03ac9b0d5"
 UNITY_INSTALL_DIR="/opt/unity"
+# Note: --strip-components=1 removes top-level "Editor/" dir from tar
+# so Unity binary ends up at $UNITY_INSTALL_DIR/Unity (not Editor/Unity)
 DOTNET_INSTALL_DIR="/opt/dotnet"
 ALTTESTER_PROJECT_DIR="/opt/alttester-tests"
 
@@ -29,7 +31,7 @@ else
 fi
 
 # ── Unity Editor (headless Linux) ─────────────────────────────
-if [ ! -f "$UNITY_INSTALL_DIR/Editor/Unity" ]; then
+if [ ! -f "$UNITY_INSTALL_DIR/Unity" ]; then
   log "Downloading Unity $UNITY_VERSION..."
   UNITY_URL="https://download.unity3d.com/download_unity/${UNITY_CHANGESET}/LinuxEditorInstaller/Unity-${UNITY_VERSION}.tar.xz"
   wget -q --show-progress "$UNITY_URL" -O /tmp/Unity.tar.xz 2>&1 | tail -3
@@ -38,7 +40,7 @@ if [ ! -f "$UNITY_INSTALL_DIR/Editor/Unity" ]; then
   mkdir -p "$UNITY_INSTALL_DIR"
   tar -xf /tmp/Unity.tar.xz -C "$UNITY_INSTALL_DIR" --strip-components=1
   rm -f /tmp/Unity.tar.xz
-  log "Unity installed: $UNITY_INSTALL_DIR/Editor/Unity"
+  log "Unity installed: $UNITY_INSTALL_DIR/Unity"
 else
   log "Unity already installed at $UNITY_INSTALL_DIR"
 fi
@@ -60,13 +62,13 @@ fi
 
 # ── Export PATH via CLAUDE_ENV_FILE ───────────────────────────
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
-  echo "export PATH=\"$UNITY_INSTALL_DIR/Editor:$DOTNET_INSTALL_DIR:\$PATH\"" >> "$CLAUDE_ENV_FILE"
-  echo "export UNITY_PATH=\"$UNITY_INSTALL_DIR/Editor/Unity\"" >> "$CLAUDE_ENV_FILE"
+  echo "export PATH=\"$UNITY_INSTALL_DIR:$DOTNET_INSTALL_DIR:\$PATH\"" >> "$CLAUDE_ENV_FILE"
+  echo "export UNITY_PATH=\"$UNITY_INSTALL_DIR/Unity\"" >> "$CLAUDE_ENV_FILE"
   echo "export DOTNET_ROOT=\"$DOTNET_INSTALL_DIR\"" >> "$CLAUDE_ENV_FILE"
   log "Environment variables written to CLAUDE_ENV_FILE"
 else
   log "CLAUDE_ENV_FILE not set. Export PATH manually:"
-  log "  export PATH=\"$UNITY_INSTALL_DIR/Editor:$DOTNET_INSTALL_DIR:\$PATH\""
+  log "  export PATH=\"$UNITY_INSTALL_DIR:$DOTNET_INSTALL_DIR:\$PATH\""
 fi
 
 log "Setup complete."
