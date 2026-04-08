@@ -3,7 +3,7 @@
 # Runs 3 layers of testing:
 #   Layer 1: Rust tests (weaven-core, all adapters)
 #   Layer 2: C# adapter tests (dotnet test)
-#   Layer 3: Unity tests + build (GameCI)
+#   Layer 3: Unity tests + build (GameCI, single Docker run)
 #
 # Required GitHub Secrets (for Unity Personal license):
 #   UNITY_LICENSE  — contents of your Unity_lic.ulf file
@@ -84,15 +84,31 @@ jobs:
         env:
           LD_LIBRARY_PATH: ${{ github.workspace }}/target/release
 
-  # ── Layer 3: Unity tests + build ─────────────────────────────────
-  unity-tests:
-    name: "Layer 3: Unity Tests & Build"
+  # ── Layer 3: Unity tests + build (single Docker run) ─────────────
+  unity:
+    name: "Layer 3: Unity"
     runs-on: ubuntu-latest
     needs: [rust-tests, csharp-tests]
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/docker-cache
+          key: docker-unity-6000.3.12f1-linux-mono-3
+          restore-keys: docker-unity-
+
+      - name: Load Docker cache
+        run: |
+          if [ -f /tmp/docker-cache/unity.tar ]; then
+            docker load -i /tmp/docker-cache/unity.tar
+            echo "Docker cache loaded"
+          else
+            echo "No Docker cache found, will pull fresh"
+          fi
 
       - name: Cache Unity Library
         uses: actions/cache@v4
@@ -112,23 +128,8 @@ jobs:
           mkdir -p demos/mycelia/MyceliaUnity/Assets/Plugins/x86_64
           cp target/release/libweaven_unity.so demos/mycelia/MyceliaUnity/Assets/Plugins/x86_64/
 
-      - name: Run Unity EditMode tests
-        uses: game-ci/unity-test-runner@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          projectPath: demos/mycelia/MyceliaUnity
-          unityVersion: 6000.3.12f1
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          testMode: EditMode
-          checkName: "Unity EditMode Tests"
-          # Use base image (smaller than il2cpp) for faster pull
-          containerRegistryRepository: unityci/editor
-          customImage: unityci/editor:ubuntu-6000.3.12f1-base-3
-
-      - name: Build StandaloneLinux64
+      # Single Docker run: test + build in one container
+      - name: Unity EditMode tests + StandaloneLinux64 build
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -139,18 +140,24 @@ jobs:
           unityVersion: 6000.3.12f1
           targetPlatform: StandaloneLinux64
           allowDirtyBuild: true
-          # Use linux-mono image — has Standalone build support
           customImage: unityci/editor:ubuntu-6000.3.12f1-linux-mono-3
+          # Run tests before build via custom parameters
+          customParameters: -runTests -testPlatform EditMode -testResults /github/workspace/artifacts/editmode-results.xml
+
+      - name: Save Docker cache
+        if: always()
+        run: |
+          mkdir -p /tmp/docker-cache
+          IMGID=$(docker images -q unityci/editor:ubuntu-6000.3.12f1-linux-mono-3 2>/dev/null)
+          if [ -n "$IMGID" ] && [ ! -f /tmp/docker-cache/unity.tar ]; then
+            docker save unityci/editor:ubuntu-6000.3.12f1-linux-mono-3 -o /tmp/docker-cache/unity.tar
+            echo "Docker image saved to cache"
+          fi
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: mycelia-linux-build
           path: build
           retention-days: 7
-
-      - name: Run headless test (post-build)
-        if: success()
-        run: |
-          echo "Build succeeded. Headless gameplay tests would run here."
-          echo "Use: ./build/StandaloneLinux64/MyceliaUnity -batchmode -nographics"
