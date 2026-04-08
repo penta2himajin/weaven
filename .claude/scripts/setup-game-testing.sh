@@ -18,6 +18,12 @@ ALTTESTER_PROJECT_DIR="/opt/alttester-tests"
 
 log() { echo "[setup-game-testing] $*"; }
 
+# ── Screenshot tools (for visual verification via xvfb) ───────
+if ! command -v import &>/dev/null; then
+  log "Installing screenshot tools..."
+  apt-get install -y -qq imagemagick xdotool scrot 2>&1 | tail -1
+fi
+
 # ── .NET SDK 8.0 ──────────────────────────────────────────────
 if [ ! -f "$DOTNET_INSTALL_DIR/dotnet" ]; then
   log "Installing .NET SDK 8.0..."
