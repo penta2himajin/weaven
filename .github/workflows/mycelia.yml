@@ -140,7 +140,7 @@ jobs:
           unityVersion: 6000.3.12f1
           targetPlatform: StandaloneLinux64
           allowDirtyBuild: true
-          customImage: unityci/editor:ubuntu-6000.3.12f1-linux-mono-3
+          customImage: unityci/editor:ubuntu-6000.3.12f1-linux-il2cpp-3
           # Run tests before build via custom parameters
           customParameters: -runTests -testPlatform EditMode -testResults /github/workspace/artifacts/editmode-results.xml
 
