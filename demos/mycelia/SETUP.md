@@ -2,32 +2,15 @@
 
 ## GitHub Actions CI (GameCI)
 
-### 1. Unity License Setup (one-time)
+### 1. Add GitHub Secrets (one-time)
 
-GameCI requires a Unity license file (`.ulf`) stored as a GitHub secret.
-
-**Option A: From Unity Hub (recommended)**
-
-1. Install Unity Hub on a machine with a display (Mac/Windows/Linux desktop)
-2. Activate a Unity Personal license via the Hub
-3. Locate the license file:
-   - **Windows**: `C:\ProgramData\Unity\Unity_lic.ulf`
-   - **Mac**: `/Library/Application Support/Unity/Unity_lic.ulf`
-   - **Linux**: `~/.local/share/unity3d/Unity/Unity_lic.ulf`
-4. Copy the contents of this file
-
-**Option B: Via GameCI activation action**
-
-See [GameCI Activation docs](https://game.ci/docs/github/activation/) for
-alternative methods.
-
-### 2. Add GitHub Secrets
+GameCI v4 handles Personal license activation via credentials directly.
+No `.ulf` file is needed.
 
 Go to your repository → Settings → Secrets and variables → Actions, then add:
 
 | Secret Name | Value |
 |------------|-------|
-| `UNITY_LICENSE` | Full contents of your `.ulf` file |
 | `UNITY_EMAIL` | Your Unity account email |
 | `UNITY_PASSWORD` | Your Unity account password |
 

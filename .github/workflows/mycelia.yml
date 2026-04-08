@@ -6,9 +6,10 @@
 #   Layer 3: Unity tests + build (GameCI)
 #
 # Required GitHub Secrets (for Unity):
-#   UNITY_LICENSE  — contents of your Unity .ulf license file
 #   UNITY_EMAIL    — Unity account email
 #   UNITY_PASSWORD — Unity account password
+# Note: GameCI v4 handles Personal license activation via credentials
+#       directly — no .ulf file needed.
 
 name: Mycelia CI
 
@@ -126,7 +127,6 @@ jobs:
       - name: Run Unity EditMode tests
         uses: game-ci/unity-test-runner@v4
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
@@ -139,7 +139,6 @@ jobs:
       - name: Build StandaloneLinux64
         uses: game-ci/unity-builder@v4
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
