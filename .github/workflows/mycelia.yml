@@ -17,7 +17,7 @@ permissions:
   checks: write
 
 on:
-  pull_request:
+  push:
     paths:
       - 'weaven-core/**'
       - 'weaven-unity/**'
