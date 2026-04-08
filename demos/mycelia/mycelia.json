@@ -7,187 +7,92 @@
       "elapse_capability": "Deterministic",
       "transitions": [
         {
-          "id": 100,
-          "source": 0,
-          "target": 1,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "And",
-              "left": {
-                "BinOp": {
-                  "op": "Gte",
-                  "left": { "CtxField": "moisture" },
-                  "right": { "CtxField": "moisture_need" }
-                }
-              },
-              "right": {
-                "BinOp": {
-                  "op": "Gte",
-                  "left": { "CtxField": "light" },
-                  "right": { "CtxField": "light_need" }
-                }
-              }
-            }
-          },
+          "id": 100, "source": 0, "target": 1, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left":  { "BinOp": { "op": "Gte", "left": { "CtxField": "moisture" }, "right": { "CtxField": "moisture_need" } } },
+            "right": { "BinOp": { "op": "Gte", "left": { "CtxField": "light" },    "right": { "CtxField": "light_need" } } }
+          }},
           "effects": []
         },
         {
-          "id": 101,
-          "source": 1,
-          "target": 2,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "growth" },
-              "right": { "Num": 30.0 }
-            }
-          },
+          "id": 101, "source": 1, "target": 2, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "growth" }, "right": { "Num": 30.0 } } },
           "effects": []
         },
         {
-          "id": 102,
-          "source": 2,
-          "target": 3,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "growth" },
-              "right": { "Num": 70.0 }
-            }
-          },
+          "id": 102, "source": 2, "target": 3, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "growth" }, "right": { "Num": 70.0 } } },
           "effects": []
         },
         {
-          "id": 103,
-          "source": 3,
-          "target": 4,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "And",
-              "left": {
-                "BinOp": {
-                  "op": "Gt",
-                  "left": { "CtxField": "growth" },
-                  "right": { "Num": 90.0 }
-                }
-              },
-              "right": {
-                "BinOp": {
-                  "op": "And",
-                  "left": {
-                    "BinOp": {
-                      "op": "Gte",
-                      "left": { "CtxField": "has_mycorrhiza" },
-                      "right": { "CtxField": "needs_mycorrhiza" }
-                    }
-                  },
-                  "right": {
-                    "BinOp": {
-                      "op": "Gte",
-                      "left": { "CtxField": "has_pollinator" },
-                      "right": { "CtxField": "needs_pollinator" }
-                    }
-                  }
-                }
-              }
-            }
-          },
+          "id": 103, "source": 3, "target": 4, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "growth" }, "right": { "Num": 90.0 } } },
+            "right": { "BinOp": { "op": "And",
+              "left":  { "BinOp": { "op": "Gte", "left": { "CtxField": "has_mycorrhiza" },  "right": { "CtxField": "needs_mycorrhiza" } } },
+              "right": { "BinOp": { "op": "Gte", "left": { "CtxField": "has_pollinator" },  "right": { "CtxField": "needs_pollinator" } } }
+            }}
+          }},
           "effects": [
-            {
-              "Signal": {
-                "port": 1,
-                "payload": {
-                  "event": { "Num": 1.0 }
-                }
-              }
-            }
+            { "Signal": { "port": 1, "payload": { "event": { "Num": 1.0 } } } }
           ]
         },
         {
-          "id": 104,
-          "source": 2,
-          "target": 5,
-          "priority": 20,
-          "guard": {
-            "BinOp": {
-              "op": "Lte",
-              "left": { "CtxField": "hp" },
-              "right": { "Num": 0.0 }
-            }
-          },
-          "effects": []
-        },
-        {
-          "id": 105,
-          "source": 3,
-          "target": 5,
-          "priority": 20,
-          "guard": {
-            "BinOp": {
-              "op": "Lte",
-              "left": { "CtxField": "hp" },
-              "right": { "Num": 0.0 }
-            }
-          },
-          "effects": []
-        },
-        {
-          "id": 106,
-          "source": 4,
-          "target": 5,
-          "priority": 20,
-          "guard": {
-            "BinOp": {
-              "op": "Lte",
-              "left": { "CtxField": "hp" },
-              "right": { "Num": 20.0 }
-            }
-          },
-          "effects": []
-        },
-        {
-          "id": 107,
-          "source": 5,
-          "target": 6,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Lte",
-              "left": { "CtxField": "hp" },
-              "right": { "Num": 0.0 }
-            }
-          },
+          "id": 104, "source": 2, "target": 5, "priority": 20,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hp" }, "right": { "Num": 0.0 } } },
           "effects": [
-            {
-              "Signal": {
-                "port": 2,
-                "payload": {
-                  "organic_value": {
-                    "BinOp": {
-                      "op": "Mul",
-                      "left": { "CtxField": "growth" },
-                      "right": { "Num": 0.5 }
-                    }
-                  }
-                }
-              }
-            }
+            { "Signal": { "port": 3, "payload": {
+              "jasmonic_acid": { "Num": 5.0 },
+              "source_hp": { "CtxField": "hp" }
+            }}}
+          ]
+        },
+        {
+          "id": 105, "source": 3, "target": 5, "priority": 20,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hp" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "Signal": { "port": 3, "payload": {
+              "jasmonic_acid": { "Num": 5.0 },
+              "source_hp": { "CtxField": "hp" }
+            }}}
+          ]
+        },
+        {
+          "id": 106, "source": 4, "target": 5, "priority": 20,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hp" }, "right": { "Num": 20.0 } } },
+          "effects": [
+            { "Signal": { "port": 3, "payload": {
+              "jasmonic_acid": { "Num": 5.0 },
+              "source_hp": { "CtxField": "hp" }
+            }}}
+          ]
+        },
+        {
+          "id": 107, "source": 5, "target": 6, "priority": 10,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hp" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "Signal": { "port": 2, "payload": {
+              "organic_value": { "BinOp": { "op": "Mul", "left": { "CtxField": "growth" }, "right": { "Num": 0.5 } } }
+            }}},
+            { "Signal": { "port": 4, "payload": {
+              "carbon": { "BinOp": { "op": "Mul", "left": { "CtxField": "carbon" }, "right": { "Num": 0.3 } } }
+            }}}
           ]
         }
       ],
       "input_ports": [
-        { "id": 0, "kind": "Input", "signal_type": 0 },
-        { "id": 3, "kind": "Input", "signal_type": 2 }
+        { "id": 0, "kind": "Input",  "signal_type": 0 },
+        { "id": 5, "kind": "Input",  "signal_type": 5 },
+        { "id": 6, "kind": "Input",  "signal_type": 6 }
       ],
       "output_ports": [
         { "id": 1, "kind": "Output", "signal_type": 1 },
-        { "id": 2, "kind": "Output", "signal_type": 2 }
+        { "id": 2, "kind": "Output", "signal_type": 2 },
+        { "id": 3, "kind": "Output", "signal_type": 5 },
+        { "id": 4, "kind": "Output", "signal_type": 7 }
       ]
     },
+
     {
       "id": 2,
       "states": [0, 1, 2, 3],
@@ -195,78 +100,40 @@
       "elapse_capability": "Deterministic",
       "transitions": [
         {
-          "id": 200,
-          "source": 0,
-          "target": 1,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "moisture" },
-              "right": { "Num": 40.0 }
-            }
-          },
+          "id": 200, "source": 0, "target": 1, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "moisture" }, "right": { "Num": 40.0 } } },
           "effects": []
         },
         {
-          "id": 201,
-          "source": 1,
-          "target": 2,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "growth" },
-              "right": { "Num": 50.0 }
-            }
-          },
+          "id": 201, "source": 1, "target": 2, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "growth" }, "right": { "Num": 50.0 } } },
           "effects": []
         },
         {
-          "id": 202,
-          "source": 2,
-          "target": 3,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "And",
-              "left": {
-                "BinOp": {
-                  "op": "Gt",
-                  "left": { "CtxField": "growth" },
-                  "right": { "Num": 80.0 }
-                }
-              },
-              "right": {
-                "BinOp": {
-                  "op": "Gt",
-                  "left": { "CtxField": "nearby_plants" },
-                  "right": { "Num": 0.0 }
-                }
-              }
-            }
-          },
+          "id": 202, "source": 2, "target": 3, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "growth" }, "right": { "Num": 80.0 } } },
+            "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "nearby_plants" }, "right": { "Num": 0.0 } } }
+          }},
           "effects": [
-            {
-              "Signal": {
-                "port": 1,
-                "payload": {
-                  "nutrient_capacity": { "CtxField": "nutrient_pool" }
-                }
-              }
-            }
+            { "Signal": { "port": 1, "payload": {
+              "phosphorus": { "CtxField": "phosphorus_pool" },
+              "nitrogen":   { "CtxField": "nitrogen_pool" }
+            }}}
           ]
         }
       ],
       "input_ports": [
-        { "id": 0, "kind": "Input", "signal_type": 2 },
-        { "id": 3, "kind": "Input", "signal_type": 4 }
+        { "id": 0, "kind": "Input",  "signal_type": 2 },
+        { "id": 3, "kind": "Input",  "signal_type": 5 },
+        { "id": 4, "kind": "Input",  "signal_type": 7 }
       ],
       "output_ports": [
         { "id": 1, "kind": "Output", "signal_type": 0 },
-        { "id": 2, "kind": "Output", "signal_type": 4 }
+        { "id": 2, "kind": "Output", "signal_type": 5 }
       ]
     },
+
     {
       "id": 3,
       "states": [0, 1, 2, 3],
@@ -274,97 +141,49 @@
       "elapse_capability": "Deterministic",
       "transitions": [
         {
-          "id": 300,
-          "source": 0,
-          "target": 1,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "hunger" },
-              "right": { "Num": 50.0 }
-            }
-          },
+          "id": 300, "source": 0, "target": 1, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "hunger" }, "right": { "Num": 50.0 } } },
           "effects": []
         },
         {
-          "id": 301,
-          "source": 1,
-          "target": 2,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "at_target" },
-              "right": { "Num": 0.0 }
-            }
-          },
+          "id": 301, "source": 1, "target": 2, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "at_target" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "Signal": { "port": 1, "payload": {
+              "damage": { "Num": 15.0 },
+              "pest_type": { "Num": 1.0 }
+            }}}
+          ]
+        },
+        {
+          "id": 302, "source": 2, "target": 0, "priority": 10,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hunger" }, "right": { "Num": 10.0 } } },
           "effects": []
         },
         {
-          "id": 302,
-          "source": 2,
-          "target": 0,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Lte",
-              "left": { "CtxField": "hunger" },
-              "right": { "Num": 10.0 }
-            }
-          },
+          "id": 303, "source": 0, "target": 3, "priority": 30,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "threat_level" }, "right": { "Num": 0.0 } } },
           "effects": []
         },
         {
-          "id": 303,
-          "source": 0,
-          "target": 3,
-          "priority": 30,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "threat_level" },
-              "right": { "Num": 0.0 }
-            }
-          },
+          "id": 304, "source": 1, "target": 3, "priority": 30,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "threat_level" }, "right": { "Num": 0.0 } } },
           "effects": []
         },
         {
-          "id": 304,
-          "source": 1,
-          "target": 3,
-          "priority": 30,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "threat_level" },
-              "right": { "Num": 0.0 }
-            }
-          },
-          "effects": []
-        },
-        {
-          "id": 305,
-          "source": 3,
-          "target": 0,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Lte",
-              "left": { "CtxField": "threat_level" },
-              "right": { "Num": 0.0 }
-            }
-          },
+          "id": 305, "source": 3, "target": 0, "priority": 10,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "threat_level" }, "right": { "Num": 0.0 } } },
           "effects": []
         }
       ],
       "input_ports": [
-        { "id": 0, "kind": "Input", "signal_type": 4 }
+        { "id": 0, "kind": "Input",  "signal_type": 4 }
       ],
       "output_ports": [
-        { "id": 1, "kind": "Output", "signal_type": 5 }
+        { "id": 1, "kind": "Output", "signal_type": 8 }
       ]
     },
+
     {
       "id": 4,
       "states": [0, 1, 2, 3],
@@ -372,95 +191,32 @@
       "elapse_capability": "Deterministic",
       "transitions": [
         {
-          "id": 400,
-          "source": 0,
-          "target": 1,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "organic_matter" },
-              "right": { "Num": 20.0 }
-            }
-          },
+          "id": 400, "source": 0, "target": 1, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "organic_matter" }, "right": { "Num": 20.0 } } },
           "effects": []
         },
         {
-          "id": 401,
-          "source": 1,
-          "target": 2,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "And",
-              "left": {
-                "BinOp": {
-                  "op": "Gt",
-                  "left": { "CtxField": "organic_matter" },
-                  "right": { "Num": 50.0 }
-                }
-              },
-              "right": {
-                "BinOp": {
-                  "op": "Gt",
-                  "left": { "CtxField": "nutrients" },
-                  "right": { "Num": 30.0 }
-                }
-              }
-            }
-          },
+          "id": 401, "source": 1, "target": 2, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "organic_matter" }, "right": { "Num": 50.0 } } },
+            "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "nutrients" }, "right": { "Num": 30.0 } } }
+          }},
           "effects": []
         },
         {
-          "id": 402,
-          "source": 2,
-          "target": 3,
-          "priority": 10,
-          "guard": {
-            "BinOp": {
-              "op": "And",
-              "left": {
-                "BinOp": {
-                  "op": "And",
-                  "left": {
-                    "BinOp": {
-                      "op": "Gt",
-                      "left": { "CtxField": "organic_matter" },
-                      "right": { "Num": 80.0 }
-                    }
-                  },
-                  "right": {
-                    "BinOp": {
-                      "op": "Gt",
-                      "left": { "CtxField": "nutrients" },
-                      "right": { "Num": 60.0 }
-                    }
-                  }
-                }
-              },
-              "right": {
-                "BinOp": {
-                  "op": "Gt",
-                  "left": { "CtxField": "moisture" },
-                  "right": { "Num": 40.0 }
-                }
-              }
-            }
-          },
+          "id": 402, "source": 2, "target": 3, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left": { "BinOp": { "op": "And",
+              "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "organic_matter" }, "right": { "Num": 80.0 } } },
+              "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "nutrients" }, "right": { "Num": 60.0 } } }
+            }},
+            "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "moisture" }, "right": { "Num": 40.0 } } }
+          }},
           "effects": []
         },
         {
-          "id": 403,
-          "source": 3,
-          "target": 2,
-          "priority": 5,
-          "guard": {
-            "BinOp": {
-              "op": "Lte",
-              "left": { "CtxField": "nutrients" },
-              "right": { "Num": 30.0 }
-            }
-          },
+          "id": 403, "source": 3, "target": 2, "priority": 5,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "nutrients" }, "right": { "Num": 30.0 } } },
           "effects": []
         }
       ],
@@ -470,112 +226,77 @@
       "output_ports": []
     }
   ],
+
   "connections": [
     {
-      "id": 1,
-      "source_sm": 2,
-      "source_port": 1,
-      "target_sm": 1,
-      "target_port": 0,
+      "id": 1, "source_sm": 2, "source_port": 1, "target_sm": 1, "target_port": 0,
       "delay_ticks": 0,
       "pipeline": [
-        {
-          "Filter": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "SigField": "nutrient_capacity" },
-              "right": { "Num": 0.0 }
-            }
-          }
-        }
+        { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "phosphorus" }, "right": { "Num": 0.0 } } } }
       ]
     },
     {
-      "id": 2,
-      "source_sm": 1,
-      "source_port": 2,
-      "target_sm": 2,
-      "target_port": 0,
+      "id": 2, "source_sm": 1, "source_port": 2, "target_sm": 2, "target_port": 0,
       "delay_ticks": 0,
       "pipeline": []
     },
     {
-      "id": 3,
-      "source_sm": 2,
-      "source_port": 2,
-      "target_sm": 2,
-      "target_port": 3,
+      "id": 3, "source_sm": 1, "source_port": 3, "target_sm": 2, "target_port": 3,
+      "delay_ticks": 0,
+      "pipeline": []
+    },
+    {
+      "id": 4, "source_sm": 2, "source_port": 2, "target_sm": 1, "target_port": 5,
       "delay_ticks": 1,
       "pipeline": [
-        {
-          "Transform": {
-            "intensity": {
-              "BinOp": {
-                "op": "Sub",
-                "left": { "SigField": "intensity" },
-                "right": { "Num": 1.0 }
-              }
-            }
-          }
-        },
-        {
-          "Filter": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "SigField": "intensity" },
-              "right": { "Num": 0.0 }
-            }
-          }
-        }
+        { "Transform": {
+          "jasmonic_acid": { "BinOp": { "op": "Sub", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 1.0 } } }
+        }},
+        { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 0.0 } } } }
       ]
+    },
+    {
+      "id": 5, "source_sm": 2, "source_port": 2, "target_sm": 2, "target_port": 3,
+      "delay_ticks": 1,
+      "pipeline": [
+        { "Transform": {
+          "jasmonic_acid": { "BinOp": { "op": "Sub", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 1.0 } } }
+        }},
+        { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 0.0 } } } }
+      ]
+    },
+    {
+      "id": 6, "source_sm": 1, "source_port": 4, "target_sm": 2, "target_port": 4,
+      "delay_ticks": 0,
+      "pipeline": []
+    },
+    {
+      "id": 7, "source_sm": 3, "source_port": 1, "target_sm": 1, "target_port": 6,
+      "delay_ticks": 0,
+      "pipeline": []
     }
   ],
+
   "named_tables": [
     {
       "name": "plant_species",
       "entries": {
-        "grass": {
-          "growth_rate": 5.0,
-          "moisture_need": 20.0,
-          "light_need": 0.5,
-          "ph_min": 5.0,
-          "ph_max": 8.0,
-          "max_hp": 50.0,
-          "needs_pollinator": 0,
-          "needs_mycorrhiza": 0
-        },
-        "tree": {
-          "growth_rate": 1.0,
-          "moisture_need": 40.0,
-          "light_need": 0.7,
-          "ph_min": 4.5,
-          "ph_max": 7.0,
-          "max_hp": 200.0,
-          "needs_pollinator": 0,
-          "needs_mycorrhiza": 0
-        },
-        "orchid": {
-          "growth_rate": 0.5,
-          "moisture_need": 60.0,
-          "light_need": 0.3,
-          "ph_min": 5.5,
-          "ph_max": 6.0,
-          "max_hp": 30.0,
-          "needs_pollinator": 1,
-          "needs_mycorrhiza": 1
-        }
+        "grass":  { "growth_rate": 5.0, "moisture_need": 20.0, "light_need": 0.5, "ph_min": 5.0, "ph_max": 8.0, "max_hp": 50.0,  "needs_pollinator": 0, "needs_mycorrhiza": 0 },
+        "tree":   { "growth_rate": 1.0, "moisture_need": 40.0, "light_need": 0.7, "ph_min": 4.5, "ph_max": 7.0, "max_hp": 200.0, "needs_pollinator": 0, "needs_mycorrhiza": 0 },
+        "orchid": { "growth_rate": 0.5, "moisture_need": 60.0, "light_need": 0.3, "ph_min": 5.5, "ph_max": 6.0, "max_hp": 30.0,  "needs_pollinator": 1, "needs_mycorrhiza": 1 }
       }
     },
     {
       "name": "fungus_compatibility",
       "entries": {
         "nutrient": {
-          "grass": { "transfer_rate": 1.0 },
-          "tree": { "transfer_rate": 2.0 },
+          "grass":  { "transfer_rate": 1.0 },
+          "tree":   { "transfer_rate": 2.0 },
           "orchid": { "transfer_rate": 3.0 }
         }
       }
     }
   ],
+
   "interaction_rules": []
 }

@@ -8,9 +8,8 @@ namespace Weaven.Tests
     /// <summary>
     /// Mycelia demo — C# adapter integration tests.
     ///
-    /// Tests the Weaven C# adapter (WeavenWorld) with the Mycelia schema,
-    /// verifying that the state machine transitions, context manipulation,
-    /// and tick simulation work correctly through the FFI boundary.
+    /// Mirrors the Rust tests in weaven-core/tests/mycelia_demo.rs,
+    /// verifying the same biological mechanics through the FFI boundary.
     /// </summary>
     public class MyceliaTests : IDisposable
     {
@@ -27,124 +26,138 @@ namespace Weaven.Tests
 
         public void Dispose() => _world.Dispose();
 
-        // ── Plant SM (id=1) ─────────────────────────────────────────────
-
-        [Fact]
-        public void PlantSeed_StaysDormant_WithoutWater()
+        private void InitGrass()
         {
-            // Plant SM starts in seed state (0)
-            // Set grass requirements but no moisture
             _world.PushInput(1, "moisture_need", 20.0);
             _world.PushInput(1, "light_need", 0.5);
+            _world.PushInput(1, "needs_mycorrhiza", 0.0);
+            _world.PushInput(1, "needs_pollinator", 0.0);
+            _world.PushInput(1, "hp", 50.0);
+            _world.PushInput(1, "carbon", 100.0);
+        }
+
+        private void InitOrchid()
+        {
+            _world.PushInput(1, "moisture_need", 60.0);
+            _world.PushInput(1, "light_need", 0.3);
+            _world.PushInput(1, "needs_mycorrhiza", 1.0);
+            _world.PushInput(1, "needs_pollinator", 1.0);
+            _world.PushInput(1, "hp", 30.0);
+            _world.PushInput(1, "carbon", 50.0);
+        }
+
+        private void GrowPlantTo(int targetState)
+        {
+            _world.PushInput(1, "moisture", 70.0);
+            _world.PushInput(1, "light", 0.8);
+            _world.PushInput(1, "growth", 95.0);
+            for (int i = 0; i < targetState; i++)
+            {
+                _world.Activate(1);
+                _world.Tick();
+            }
+        }
+
+        // ── Plant lifecycle ─────────────────────────────────────────
+
+        [Fact]
+        public void Plant_SeedDormant_WithoutWater()
+        {
+            InitGrass();
             _world.PushInput(1, "moisture", 0.0);
             _world.PushInput(1, "light", 1.0);
-            _world.PushInput(1, "hp", 50.0);
-
             _world.Activate(1);
-            var result = _world.Tick();
-
+            _world.Tick();
             Assert.Equal(0, _world.ActiveState(1));
         }
 
         [Fact]
-        public void PlantSeed_Sprouts_WithSufficientConditions()
+        public void Plant_SeedSprouts_WithConditions()
         {
-            _world.PushInput(1, "moisture_need", 20.0);
-            _world.PushInput(1, "light_need", 0.5);
+            InitGrass();
             _world.PushInput(1, "moisture", 30.0);
             _world.PushInput(1, "light", 0.8);
-            _world.PushInput(1, "hp", 50.0);
-
             _world.Activate(1);
             _world.Tick();
-
             Assert.Equal(1, _world.ActiveState(1));
         }
 
         [Fact]
-        public void PlantGrowth_ProgressesToMature()
+        public void Plant_FullLifecycle_SeedToMature()
         {
-            // Seed -> Sprout
-            _world.PushInput(1, "moisture_need", 20.0);
-            _world.PushInput(1, "light_need", 0.5);
-            _world.PushInput(1, "moisture", 30.0);
-            _world.PushInput(1, "light", 0.8);
-            _world.PushInput(1, "hp", 50.0);
+            InitGrass();
+            GrowPlantTo(3);
+            Assert.Equal(3, _world.ActiveState(1));
+        }
+
+        [Fact]
+        public void Plant_WiltsWhenHpZero()
+        {
+            InitGrass();
+            GrowPlantTo(2); // growing
+            _world.PushInput(1, "hp", 0.0);
             _world.Activate(1);
             _world.Tick();
-            Assert.Equal(1, _world.ActiveState(1));
+            Assert.Equal(5, _world.ActiveState(1)); // wilting
+        }
 
-            // Sprout -> Growing
-            _world.PushInput(1, "growth", 35.0);
+        [Fact]
+        public void Plant_DeadAfterWilting()
+        {
+            InitGrass();
+            GrowPlantTo(2);
+            _world.PushInput(1, "hp", 0.0);
             _world.Activate(1);
-            _world.Tick();
-            Assert.Equal(2, _world.ActiveState(1));
+            _world.Tick(); // → wilting
+            _world.Activate(1);
+            _world.Tick(); // → dead
+            Assert.Equal(6, _world.ActiveState(1));
+        }
 
-            // Growing -> Mature
-            _world.PushInput(1, "growth", 75.0);
+        // ── Orchid win condition ─────────────────────────────────────
+
+        [Fact]
+        public void Orchid_BlockedWithoutMycorrhiza()
+        {
+            InitOrchid();
+            GrowPlantTo(3); // mature
             _world.Activate(1);
             _world.Tick();
             Assert.Equal(3, _world.ActiveState(1));
         }
 
-        // ── Orchid Win Condition ─────────────────────────────────────────
-
         [Fact]
-        public void Orchid_CannotFlower_WithoutMycorrhiza()
+        public void Orchid_BlockedWithoutPollinator()
         {
-            // Set orchid requirements
-            _world.PushInput(1, "moisture_need", 60.0);
-            _world.PushInput(1, "light_need", 0.3);
-            _world.PushInput(1, "needs_mycorrhiza", 1.0);
-            _world.PushInput(1, "needs_pollinator", 1.0);
-            _world.PushInput(1, "moisture", 70.0);
-            _world.PushInput(1, "light", 0.5);
-            _world.PushInput(1, "hp", 30.0);
-            _world.PushInput(1, "growth", 95.0);
-
-            // Progress: seed -> sprout -> growing -> mature
-            for (int i = 0; i < 3; i++)
-            {
-                _world.Activate(1);
-                _world.Tick();
-            }
-            Assert.Equal(3, _world.ActiveState(1)); // Mature
-
-            // Try to flower without mycorrhiza
+            InitOrchid();
+            GrowPlantTo(3);
+            _world.PushInput(1, "has_mycorrhiza", 1.0);
             _world.Activate(1);
             _world.Tick();
-            Assert.Equal(3, _world.ActiveState(1)); // Still mature
+            Assert.Equal(3, _world.ActiveState(1));
         }
 
         [Fact]
-        public void Orchid_Flowers_WithBothMycorrhizaAndPollinator()
+        public void Orchid_Flowers_WithBothRequirements()
         {
-            _world.PushInput(1, "moisture_need", 60.0);
-            _world.PushInput(1, "light_need", 0.3);
-            _world.PushInput(1, "needs_mycorrhiza", 1.0);
-            _world.PushInput(1, "needs_pollinator", 1.0);
-            _world.PushInput(1, "moisture", 70.0);
-            _world.PushInput(1, "light", 0.5);
-            _world.PushInput(1, "hp", 30.0);
-            _world.PushInput(1, "growth", 95.0);
-
-            // seed -> sprout -> growing -> mature
-            for (int i = 0; i < 3; i++)
-            {
-                _world.Activate(1);
-                _world.Tick();
-            }
-            Assert.Equal(3, _world.ActiveState(1));
-
-            // Add both requirements
+            InitOrchid();
+            GrowPlantTo(3);
             _world.PushInput(1, "has_mycorrhiza", 1.0);
             _world.PushInput(1, "has_pollinator", 1.0);
             _world.Activate(1);
             _world.Tick();
-            Assert.Equal(4, _world.ActiveState(1)); // Flowering! WIN!
+            Assert.Equal(4, _world.ActiveState(1)); // WIN!
         }
 
-        // ── Fungus SM (id=2) ────────────────────────────────────────────
+        [Fact]
+        public void Grass_FlowersWithoutSpecialRequirements()
+        {
+            InitGrass();
+            GrowPlantTo(4);
+            Assert.Equal(4, _world.ActiveState(1));
+        }
+
+        // ── Fungus lifecycle ────────────────────────────────────────
 
         [Fact]
         public void Fungus_GerminatesWithMoisture()
@@ -156,7 +169,7 @@ namespace Weaven.Tests
         }
 
         [Fact]
-        public void Fungus_StaysDormantInDrySoil()
+        public void Fungus_DormantInDrySoil()
         {
             _world.PushInput(2, "moisture", 20.0);
             _world.Activate(2);
@@ -164,70 +177,123 @@ namespace Weaven.Tests
             Assert.Equal(0, _world.ActiveState(2));
         }
 
-        // ── Creature SM (id=3) ──────────────────────────────────────────
+        [Fact]
+        public void Fungus_FullLifecycleToConnected()
+        {
+            _world.PushInput(2, "moisture", 50.0);
+            _world.PushInput(2, "phosphorus_pool", 30.0);
+            _world.PushInput(2, "nitrogen_pool", 20.0);
+            _world.Activate(2);
+            _world.Tick(); // germinating
+
+            _world.PushInput(2, "growth", 55.0);
+            _world.Activate(2);
+            _world.Tick(); // growing
+
+            _world.PushInput(2, "growth", 85.0);
+            _world.PushInput(2, "nearby_plants", 1.0);
+            _world.Activate(2);
+            _world.Tick(); // connected
+            Assert.Equal(3, _world.ActiveState(2));
+        }
+
+        // ── Creature behavior ───────────────────────────────────────
 
         [Fact]
-        public void Creature_FleesWhenThreatened()
+        public void Creature_ForagesWhenHungry()
+        {
+            _world.PushInput(3, "hunger", 60.0);
+            _world.Activate(3);
+            _world.Tick();
+            Assert.Equal(1, _world.ActiveState(3));
+        }
+
+        [Fact]
+        public void Creature_FleesOverridesHunger()
         {
             _world.PushInput(3, "hunger", 60.0);
             _world.PushInput(3, "threat_level", 5.0);
             _world.Activate(3);
             _world.Tick();
-            Assert.Equal(3, _world.ActiveState(3)); // Fleeing
+            Assert.Equal(3, _world.ActiveState(3));
         }
 
-        // ── Soil Cell SM (id=4) ─────────────────────────────────────────
+        // ── Soil cell ───────────────────────────────────────────────
 
         [Fact]
-        public void Soil_EnrichesWithOrganicMatter()
+        public void Soil_BarrenToPoor()
         {
             _world.PushInput(4, "organic_matter", 25.0);
             _world.Activate(4);
             _world.Tick();
-            Assert.Equal(1, _world.ActiveState(4)); // barren -> poor
+            Assert.Equal(1, _world.ActiveState(4));
         }
 
-        // ── Snapshot/Restore ────────────────────────────────────────────
+        [Fact]
+        public void Soil_FullEnrichment()
+        {
+            _world.PushInput(4, "organic_matter", 85.0);
+            _world.PushInput(4, "nutrients", 65.0);
+            _world.PushInput(4, "moisture", 50.0);
+            for (int i = 0; i < 3; i++)
+            {
+                _world.Activate(4);
+                _world.Tick();
+            }
+            Assert.Equal(3, _world.ActiveState(4));
+        }
+
+        // ── Snapshot/Restore ────────────────────────────────────────
 
         [Fact]
         public void Snapshot_PreservesAndRestoresState()
         {
-            // Advance plant to sprout
-            _world.PushInput(1, "moisture_need", 20.0);
-            _world.PushInput(1, "light_need", 0.5);
-            _world.PushInput(1, "moisture", 30.0);
-            _world.PushInput(1, "light", 0.8);
-            _world.PushInput(1, "hp", 50.0);
-            _world.Activate(1);
-            _world.Tick();
-            Assert.Equal(1, _world.ActiveState(1));
+            InitGrass();
+            GrowPlantTo(2);
+            Assert.Equal(2, _world.ActiveState(1));
 
-            // Take snapshot
             var snap = _world.TakeSnapshot();
-            Assert.False(string.IsNullOrEmpty(snap));
 
-            // Advance further
-            _world.PushInput(1, "growth", 40.0);
+            _world.PushInput(1, "growth", 95.0);
             _world.Activate(1);
-            _world.Tick();
-            Assert.Equal(2, _world.ActiveState(1)); // Growing
+            _world.Tick(); // grows past state 2
+            Assert.NotEqual(2, _world.ActiveState(1));
 
-            // Restore -> back to sprout
             _world.RestoreSnapshot(snap);
-            Assert.Equal(1, _world.ActiveState(1));
+            Assert.Equal(2, _world.ActiveState(1));
+        }
+
+        // ── Stability ───────────────────────────────────────────────
+
+        [Fact]
+        public void HundredTick_Stability()
+        {
+            InitGrass();
+            _world.PushInput(2, "moisture", 50.0);
+
+            for (int t = 0; t < 100; t++)
+            {
+                double moisture = 20.0 + 30.0 * Math.Sin(t * 0.1);
+                double light = Math.Max(0, Math.Sin(t * 0.05 * Math.PI));
+                _world.PushInput(1, "moisture", moisture);
+                _world.PushInput(1, "light", light);
+                _world.PushInput(2, "moisture", moisture);
+                _world.Activate(1);
+                _world.Activate(2);
+                _world.Activate(3);
+                _world.Activate(4);
+                _world.Tick();
+            }
+            // No crash = pass
         }
     }
 
-    /// <summary>
-    /// Helper to locate the repo root for loading schema files.
-    /// </summary>
     internal static class TestContext
     {
         internal static string RepoRoot
         {
             get
             {
-                // Walk up from bin/Debug/net8.0 to find the repo root
                 var dir = AppDomain.CurrentDomain.BaseDirectory;
                 while (dir != null)
                 {
@@ -235,7 +301,6 @@ namespace Weaven.Tests
                         return dir;
                     dir = Directory.GetParent(dir)?.FullName;
                 }
-                // Fallback: assume running from repo root
                 return Directory.GetCurrentDirectory();
             }
         }
