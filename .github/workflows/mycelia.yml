@@ -139,8 +139,8 @@ jobs:
           unityVersion: 6000.3.12f1
           targetPlatform: StandaloneLinux64
           allowDirtyBuild: true
-          # Use base image — Mono backend is sufficient for demo
-          customImage: unityci/editor:ubuntu-6000.3.12f1-base-3
+          # Use linux-mono image — has Standalone build support
+          customImage: unityci/editor:ubuntu-6000.3.12f1-linux-mono-3
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
