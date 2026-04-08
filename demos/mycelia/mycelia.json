@@ -18,36 +18,19 @@
                 "BinOp": {
                   "op": "Gte",
                   "left": { "CtxField": "moisture" },
-                  "right": {
-                    "TableLookup": {
-                      "table": "plant_species",
-                      "keys": [{ "CtxField": "species" }, { "Str": "moisture_need" }]
-                    }
-                  }
+                  "right": { "CtxField": "moisture_need" }
                 }
               },
               "right": {
                 "BinOp": {
                   "op": "Gte",
                   "left": { "CtxField": "light" },
-                  "right": {
-                    "TableLookup": {
-                      "table": "plant_species",
-                      "keys": [{ "CtxField": "species" }, { "Str": "light_need" }]
-                    }
-                  }
+                  "right": { "CtxField": "light_need" }
                 }
               }
             }
           },
-          "effects": [
-            {
-              "SetContext": {
-                "field": "growth",
-                "expr": { "Num": 0.0 }
-              }
-            }
-          ]
+          "effects": []
         },
         {
           "id": 101,
@@ -95,8 +78,20 @@
               "right": {
                 "BinOp": {
                   "op": "And",
-                  "left": { "CtxField": "has_mycorrhiza" },
-                  "right": { "CtxField": "has_pollinator" }
+                  "left": {
+                    "BinOp": {
+                      "op": "Gte",
+                      "left": { "CtxField": "has_mycorrhiza" },
+                      "right": { "CtxField": "needs_mycorrhiza" }
+                    }
+                  },
+                  "right": {
+                    "BinOp": {
+                      "op": "Gte",
+                      "left": { "CtxField": "has_pollinator" },
+                      "right": { "CtxField": "needs_pollinator" }
+                    }
+                  }
                 }
               }
             }
@@ -106,8 +101,7 @@
               "Signal": {
                 "port": 1,
                 "payload": {
-                  "event": { "Str": "pollen_ready" },
-                  "species": { "CtxField": "species" }
+                  "event": { "Num": 1.0 }
                 }
               }
             }
@@ -115,14 +109,14 @@
         },
         {
           "id": 104,
-          "source": 4,
+          "source": 2,
           "target": 5,
           "priority": 20,
           "guard": {
             "BinOp": {
               "op": "Lte",
               "left": { "CtxField": "hp" },
-              "right": { "Num": 20.0 }
+              "right": { "Num": 0.0 }
             }
           },
           "effects": []
@@ -143,14 +137,14 @@
         },
         {
           "id": 106,
-          "source": 2,
+          "source": 4,
           "target": 5,
           "priority": 20,
           "guard": {
             "BinOp": {
               "op": "Lte",
               "left": { "CtxField": "hp" },
-              "right": { "Num": 0.0 }
+              "right": { "Num": 20.0 }
             }
           },
           "effects": []
@@ -172,7 +166,6 @@
               "Signal": {
                 "port": 2,
                 "payload": {
-                  "event": { "Str": "decompose" },
                   "organic_value": {
                     "BinOp": {
                       "op": "Mul",
@@ -188,8 +181,7 @@
       ],
       "input_ports": [
         { "id": 0, "kind": "Input", "signal_type": 0 },
-        { "id": 3, "kind": "Input", "signal_type": 2 },
-        { "id": 4, "kind": "ContinuousInput", "signal_type": 3 }
+        { "id": 3, "kind": "Input", "signal_type": 2 }
       ],
       "output_ports": [
         { "id": 1, "kind": "Output", "signal_type": 1 },
@@ -259,7 +251,6 @@
               "Signal": {
                 "port": 1,
                 "payload": {
-                  "event": { "Str": "connected" },
                   "nutrient_capacity": { "CtxField": "nutrient_pool" }
                 }
               }
@@ -474,12 +465,9 @@
         }
       ],
       "input_ports": [
-        { "id": 0, "kind": "Input", "signal_type": 2 },
-        { "id": 1, "kind": "ContinuousInput", "signal_type": 6 }
+        { "id": 0, "kind": "Input", "signal_type": 2 }
       ],
-      "output_ports": [
-        { "id": 2, "kind": "ContinuousOutput", "signal_type": 6 }
-      ]
+      "output_ports": []
     }
   ],
   "connections": [
@@ -553,8 +541,8 @@
           "ph_min": 5.0,
           "ph_max": 8.0,
           "max_hp": 50.0,
-          "needs_pollinator": false,
-          "needs_mycorrhiza": false
+          "needs_pollinator": 0,
+          "needs_mycorrhiza": 0
         },
         "tree": {
           "growth_rate": 1.0,
@@ -563,8 +551,8 @@
           "ph_min": 4.5,
           "ph_max": 7.0,
           "max_hp": 200.0,
-          "needs_pollinator": false,
-          "needs_mycorrhiza": false
+          "needs_pollinator": 0,
+          "needs_mycorrhiza": 0
         },
         "orchid": {
           "growth_rate": 0.5,
@@ -573,8 +561,8 @@
           "ph_min": 5.5,
           "ph_max": 6.0,
           "max_hp": 30.0,
-          "needs_pollinator": true,
-          "needs_mycorrhiza": true
+          "needs_pollinator": 1,
+          "needs_mycorrhiza": 1
         }
       }
     },
@@ -582,148 +570,12 @@
       "name": "fungus_compatibility",
       "entries": {
         "nutrient": {
-          "grass": { "transfer_rate": 1.0, "compatible": true },
-          "tree": { "transfer_rate": 2.0, "compatible": true },
-          "orchid": { "transfer_rate": 3.0, "compatible": true }
+          "grass": { "transfer_rate": 1.0 },
+          "tree": { "transfer_rate": 2.0 },
+          "orchid": { "transfer_rate": 3.0 }
         }
       }
     }
   ],
-  "interaction_rules": [
-    {
-      "id": 1,
-      "participants": [
-        { "sm_id": 2, "required_state": 3 },
-        { "sm_id": 1 }
-      ],
-      "conditions": [
-        { "kind": "Spatial", "radius": 10.0 },
-        {
-          "kind": "Guard",
-          "expr": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "nutrient_pool" },
-              "right": { "Num": 5.0 }
-            }
-          }
-        }
-      ],
-      "effects": [
-        {
-          "Signal": {
-            "port": 0,
-            "payload": {
-              "nutrients": { "Num": 10.0 },
-              "source": { "Str": "mycorrhiza" }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "participants": [
-        { "sm_id": 3, "required_state": 2 },
-        { "sm_id": 1 }
-      ],
-      "conditions": [
-        { "kind": "Spatial", "radius": 2.0 },
-        {
-          "kind": "Guard",
-          "expr": {
-            "BinOp": {
-              "op": "Gt",
-              "left": { "CtxField": "hunger" },
-              "right": { "Num": 30.0 }
-            }
-          }
-        }
-      ],
-      "effects": [
-        {
-          "Signal": {
-            "port": 0,
-            "payload": {
-              "damage": { "Num": 15.0 },
-              "source": { "Str": "pest" }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "participants": [
-        { "sm_id": 3, "required_state": 2 },
-        { "sm_id": 1, "required_state": 4 }
-      ],
-      "conditions": [
-        { "kind": "Spatial", "radius": 3.0 }
-      ],
-      "effects": [
-        {
-          "SetContext": {
-            "field": "has_pollinator",
-            "expr": { "Bool": true }
-          }
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "participants": [
-        { "sm_id": 1, "required_state": 5 },
-        { "sm_id": 2, "required_state": 3 }
-      ],
-      "conditions": [
-        { "kind": "Spatial", "radius": 10.0 },
-        {
-          "kind": "Guard",
-          "expr": {
-            "BinOp": {
-              "op": "Lt",
-              "left": { "CtxField": "hp" },
-              "right": { "Num": 30.0 }
-            }
-          }
-        }
-      ],
-      "effects": [
-        {
-          "Signal": {
-            "port": 2,
-            "payload": {
-              "warning": { "Bool": true },
-              "intensity": { "Num": 5.0 }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "participants": [
-        { "sm_id": 2, "required_state": 3 },
-        { "sm_id": 1, "required_state": 6 }
-      ],
-      "conditions": [
-        { "kind": "Spatial", "radius": 10.0 }
-      ],
-      "effects": [
-        {
-          "SetContext": {
-            "field": "organic_matter",
-            "expr": {
-              "BinOp": {
-                "op": "Add",
-                "left": { "CtxField": "organic_matter" },
-                "right": { "Num": 20.0 }
-              }
-            }
-          }
-        }
-      ]
-    }
-  ]
+  "interaction_rules": []
 }
