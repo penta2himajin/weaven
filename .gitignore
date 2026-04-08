@@ -25,4 +25,12 @@ Thumbs.db
 **/bin/
 **/obj/
 
+# Unity
+**/[Tt]emp/
+**/[Ll]ibrary/
+**/[Ll]ogs/
+**/[Bb]uild/
+**/[Bb]uilds/
+**/UserSettings/
+
 # oxidtr is an external tool — see https://github.com/penta2himajin/oxidtr
