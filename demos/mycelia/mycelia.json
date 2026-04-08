@@ -41,49 +41,37 @@
           "id": 104, "source": 2, "target": 5, "priority": 20,
           "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hp" }, "right": { "Num": 0.0 } } },
           "effects": [
-            { "Signal": { "port": 3, "payload": {
-              "jasmonic_acid": { "Num": 5.0 },
-              "source_hp": { "CtxField": "hp" }
-            }}}
+            { "Signal": { "port": 3, "payload": { "jasmonic_acid": { "Num": 5.0 }, "source_hp": { "CtxField": "hp" } } } }
           ]
         },
         {
           "id": 105, "source": 3, "target": 5, "priority": 20,
           "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hp" }, "right": { "Num": 0.0 } } },
           "effects": [
-            { "Signal": { "port": 3, "payload": {
-              "jasmonic_acid": { "Num": 5.0 },
-              "source_hp": { "CtxField": "hp" }
-            }}}
+            { "Signal": { "port": 3, "payload": { "jasmonic_acid": { "Num": 5.0 }, "source_hp": { "CtxField": "hp" } } } }
           ]
         },
         {
           "id": 106, "source": 4, "target": 5, "priority": 20,
           "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hp" }, "right": { "Num": 20.0 } } },
           "effects": [
-            { "Signal": { "port": 3, "payload": {
-              "jasmonic_acid": { "Num": 5.0 },
-              "source_hp": { "CtxField": "hp" }
-            }}}
+            { "Signal": { "port": 3, "payload": { "jasmonic_acid": { "Num": 5.0 }, "source_hp": { "CtxField": "hp" } } } }
           ]
         },
         {
           "id": 107, "source": 5, "target": 6, "priority": 10,
           "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "hp" }, "right": { "Num": 0.0 } } },
           "effects": [
-            { "Signal": { "port": 2, "payload": {
-              "organic_value": { "BinOp": { "op": "Mul", "left": { "CtxField": "growth" }, "right": { "Num": 0.5 } } }
-            }}},
-            { "Signal": { "port": 4, "payload": {
-              "carbon": { "BinOp": { "op": "Mul", "left": { "CtxField": "carbon" }, "right": { "Num": 0.3 } } }
-            }}}
+            { "Signal": { "port": 2, "payload": { "organic_value": { "BinOp": { "op": "Mul", "left": { "CtxField": "growth" }, "right": { "Num": 0.5 } } } } } },
+            { "Signal": { "port": 4, "payload": { "carbon": { "BinOp": { "op": "Mul", "left": { "CtxField": "carbon" }, "right": { "Num": 0.3 } } } } } }
           ]
         }
       ],
       "input_ports": [
         { "id": 0, "kind": "Input",  "signal_type": 0 },
         { "id": 5, "kind": "Input",  "signal_type": 5 },
-        { "id": 6, "kind": "Input",  "signal_type": 6 }
+        { "id": 6, "kind": "Input",  "signal_type": 6 },
+        { "id": 7, "kind": "Input",  "signal_type": 10 }
       ],
       "output_ports": [
         { "id": 1, "kind": "Output", "signal_type": 1 },
@@ -117,8 +105,8 @@
           }},
           "effects": [
             { "Signal": { "port": 1, "payload": {
-              "phosphorus": { "CtxField": "phosphorus_pool" },
-              "nitrogen":   { "CtxField": "nitrogen_pool" }
+              "phosphorus": { "BinOp": { "op": "Mul", "left": { "CtxField": "phosphorus_pool" }, "right": { "CtxField": "trust_score" } } },
+              "nitrogen":   { "BinOp": { "op": "Mul", "left": { "CtxField": "nitrogen_pool" },   "right": { "CtxField": "trust_score" } } }
             }}}
           ]
         }
@@ -149,10 +137,7 @@
           "id": 301, "source": 1, "target": 2, "priority": 10,
           "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "at_target" }, "right": { "Num": 0.0 } } },
           "effects": [
-            { "Signal": { "port": 1, "payload": {
-              "damage": { "Num": 15.0 },
-              "pest_type": { "Num": 1.0 }
-            }}}
+            { "Signal": { "port": 1, "payload": { "damage": { "Num": 15.0 }, "pest_type": { "Num": 1.0 } } } }
           ]
         },
         {
@@ -224,6 +209,197 @@
         { "id": 0, "kind": "Input", "signal_type": 2 }
       ],
       "output_ports": []
+    },
+
+    {
+      "id": 5,
+      "states": [0, 1, 2, 3],
+      "initial_state": 0,
+      "elapse_capability": "Deterministic",
+      "transitions": [
+        {
+          "id": 500, "source": 0, "target": 1, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "tick_in_season" }, "right": { "CtxField": "season_length" } } },
+          "effects": [
+            { "SetContext": { "field": "tick_in_season", "expr": { "Num": 0.0 } } },
+            { "Signal": { "port": 1, "payload": {
+              "season": { "Num": 1.0 },
+              "photosynthesis_mod": { "Num": 1.0 },
+              "growth_mod": { "Num": 1.2 },
+              "network_activity": { "Num": 1.0 }
+            }}}
+          ]
+        },
+        {
+          "id": 501, "source": 1, "target": 2, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "tick_in_season" }, "right": { "CtxField": "season_length" } } },
+          "effects": [
+            { "SetContext": { "field": "tick_in_season", "expr": { "Num": 0.0 } } },
+            { "Signal": { "port": 1, "payload": {
+              "season": { "Num": 2.0 },
+              "photosynthesis_mod": { "Num": 0.6 },
+              "growth_mod": { "Num": 0.5 },
+              "network_activity": { "Num": 0.8 }
+            }}}
+          ]
+        },
+        {
+          "id": 502, "source": 2, "target": 3, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "tick_in_season" }, "right": { "CtxField": "season_length" } } },
+          "effects": [
+            { "SetContext": { "field": "tick_in_season", "expr": { "Num": 0.0 } } },
+            { "Signal": { "port": 1, "payload": {
+              "season": { "Num": 3.0 },
+              "photosynthesis_mod": { "Num": 0.0 },
+              "growth_mod": { "Num": 0.0 },
+              "network_activity": { "Num": 0.2 }
+            }}}
+          ]
+        },
+        {
+          "id": 503, "source": 3, "target": 0, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "tick_in_season" }, "right": { "CtxField": "season_length" } } },
+          "effects": [
+            { "SetContext": { "field": "tick_in_season", "expr": { "Num": 0.0 } } },
+            { "Signal": { "port": 1, "payload": {
+              "season": { "Num": 0.0 },
+              "photosynthesis_mod": { "Num": 0.8 },
+              "growth_mod": { "Num": 1.0 },
+              "network_activity": { "Num": 0.9 }
+            }}}
+          ]
+        }
+      ],
+      "input_ports": [],
+      "output_ports": [
+        { "id": 1, "kind": "Output", "signal_type": 9 }
+      ]
+    },
+
+    {
+      "id": 6,
+      "states": [0, 1, 2, 3, 4],
+      "initial_state": 0,
+      "elapse_capability": "Deterministic",
+      "transitions": [
+        {
+          "id": 600, "source": 0, "target": 1, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "moisture" }, "right": { "Num": 30.0 } } },
+            "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "nutrients" }, "right": { "Num": 10.0 } } }
+          }},
+          "effects": []
+        },
+        {
+          "id": 601, "source": 1, "target": 2, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "growth" }, "right": { "Num": 40.0 } } },
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "tip_event": { "Num": 1.0 } } } }
+          ]
+        },
+        {
+          "id": 602, "source": 2, "target": 3, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "nearby_root" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "SetContext": { "field": "connected_plant", "expr": { "CtxField": "nearby_root" } } },
+            { "Signal": { "port": 1, "payload": { "tip_event": { "Num": 2.0 } } } }
+          ]
+        },
+        {
+          "id": 603, "source": 2, "target": 3, "priority": 5,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "nearby_hypha" }, "right": { "Num": 0.0 } } },
+          "effects": [
+            { "SetContext": { "field": "fused_with", "expr": { "CtxField": "nearby_hypha" } } },
+            { "Signal": { "port": 1, "payload": { "tip_event": { "Num": 3.0 } } } }
+          ]
+        },
+        {
+          "id": 604, "source": 1, "target": 4, "priority": 15,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "nutrients" }, "right": { "Num": 5.0 } } },
+          "effects": []
+        },
+        {
+          "id": 605, "source": 2, "target": 4, "priority": 15,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "nutrients" }, "right": { "Num": 5.0 } } },
+          "effects": []
+        },
+        {
+          "id": 606, "source": 4, "target": 0, "priority": 10,
+          "guard": { "BinOp": { "op": "Gt", "left": { "CtxField": "nutrients" }, "right": { "Num": 20.0 } } },
+          "effects": []
+        }
+      ],
+      "input_ports": [],
+      "output_ports": [
+        { "id": 1, "kind": "Output", "signal_type": 11 }
+      ]
+    },
+
+    {
+      "id": 7,
+      "states": [0, 1, 2, 3],
+      "initial_state": 0,
+      "elapse_capability": "Deterministic",
+      "transitions": [
+        {
+          "id": 700, "source": 0, "target": 1, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "soil_quality" }, "right": { "Num": 20.0 } } },
+            "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "plant_cover" }, "right": { "Num": 10.0 } } }
+          }},
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "biome_stage": { "Num": 1.0 } } } }
+          ]
+        },
+        {
+          "id": 701, "source": 1, "target": 2, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left": { "BinOp": { "op": "And",
+              "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "plant_diversity" }, "right": { "Num": 3.0 } } },
+              "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "network_density" }, "right": { "Num": 30.0 } } }
+            }},
+            "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "soil_quality" }, "right": { "Num": 50.0 } } }
+          }},
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "biome_stage": { "Num": 2.0 } } } }
+          ]
+        },
+        {
+          "id": 702, "source": 2, "target": 3, "priority": 10,
+          "guard": { "BinOp": { "op": "And",
+            "left": { "BinOp": { "op": "And",
+              "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "plant_diversity" }, "right": { "Num": 6.0 } } },
+              "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "network_density" }, "right": { "Num": 70.0 } } }
+            }},
+            "right": { "BinOp": { "op": "And",
+              "left":  { "BinOp": { "op": "Gt", "left": { "CtxField": "hub_count" }, "right": { "Num": 2.0 } } },
+              "right": { "BinOp": { "op": "Gt", "left": { "CtxField": "soil_quality" }, "right": { "Num": 80.0 } } }
+            }}
+          }},
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "biome_stage": { "Num": 3.0 } } } }
+          ]
+        },
+        {
+          "id": 703, "source": 3, "target": 2, "priority": 5,
+          "guard": { "BinOp": { "op": "Or",
+            "left":  { "BinOp": { "op": "Lte", "left": { "CtxField": "hub_count" }, "right": { "Num": 0.0 } } },
+            "right": { "BinOp": { "op": "Lte", "left": { "CtxField": "network_density" }, "right": { "Num": 30.0 } } }
+          }},
+          "effects": [
+            { "Signal": { "port": 1, "payload": { "biome_stage": { "Num": 2.0 } } } }
+          ]
+        },
+        {
+          "id": 704, "source": 2, "target": 1, "priority": 5,
+          "guard": { "BinOp": { "op": "Lte", "left": { "CtxField": "plant_diversity" }, "right": { "Num": 2.0 } } },
+          "effects": []
+        }
+      ],
+      "input_ports": [],
+      "output_ports": [
+        { "id": 1, "kind": "Output", "signal_type": 12 }
+      ]
     }
   ],
 
@@ -249,9 +425,7 @@
       "id": 4, "source_sm": 2, "source_port": 2, "target_sm": 1, "target_port": 5,
       "delay_ticks": 1,
       "pipeline": [
-        { "Transform": {
-          "jasmonic_acid": { "BinOp": { "op": "Sub", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 1.0 } } }
-        }},
+        { "Transform": { "jasmonic_acid": { "BinOp": { "op": "Sub", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 1.0 } } } } },
         { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 0.0 } } } }
       ]
     },
@@ -259,9 +433,7 @@
       "id": 5, "source_sm": 2, "source_port": 2, "target_sm": 2, "target_port": 3,
       "delay_ticks": 1,
       "pipeline": [
-        { "Transform": {
-          "jasmonic_acid": { "BinOp": { "op": "Sub", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 1.0 } } }
-        }},
+        { "Transform": { "jasmonic_acid": { "BinOp": { "op": "Sub", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 1.0 } } } } },
         { "Filter": { "BinOp": { "op": "Gt", "left": { "SigField": "jasmonic_acid" }, "right": { "Num": 0.0 } } } }
       ]
     },
@@ -274,6 +446,11 @@
       "id": 7, "source_sm": 3, "source_port": 1, "target_sm": 1, "target_port": 6,
       "delay_ticks": 0,
       "pipeline": []
+    },
+    {
+      "id": 8, "source_sm": 5, "source_port": 1, "target_sm": 1, "target_port": 7,
+      "delay_ticks": 0,
+      "pipeline": []
     }
   ],
 
@@ -281,9 +458,10 @@
     {
       "name": "plant_species",
       "entries": {
-        "grass":  { "growth_rate": 5.0, "moisture_need": 20.0, "light_need": 0.5, "ph_min": 5.0, "ph_max": 8.0, "max_hp": 50.0,  "needs_pollinator": 0, "needs_mycorrhiza": 0 },
-        "tree":   { "growth_rate": 1.0, "moisture_need": 40.0, "light_need": 0.7, "ph_min": 4.5, "ph_max": 7.0, "max_hp": 200.0, "needs_pollinator": 0, "needs_mycorrhiza": 0 },
-        "orchid": { "growth_rate": 0.5, "moisture_need": 60.0, "light_need": 0.3, "ph_min": 5.5, "ph_max": 6.0, "max_hp": 30.0,  "needs_pollinator": 1, "needs_mycorrhiza": 1 }
+        "grass":  { "growth_rate": 5.0, "moisture_need": 20.0, "light_need": 0.5, "ph_min": 5.0, "ph_max": 8.0, "max_hp": 50.0,  "needs_pollinator": 0, "needs_mycorrhiza": 0, "is_deciduous": 1, "allelopathic": 0 },
+        "tree":   { "growth_rate": 1.0, "moisture_need": 40.0, "light_need": 0.7, "ph_min": 4.5, "ph_max": 7.0, "max_hp": 200.0, "needs_pollinator": 0, "needs_mycorrhiza": 0, "is_deciduous": 0, "allelopathic": 0 },
+        "orchid": { "growth_rate": 0.5, "moisture_need": 60.0, "light_need": 0.3, "ph_min": 5.5, "ph_max": 6.0, "max_hp": 30.0,  "needs_pollinator": 1, "needs_mycorrhiza": 1, "is_deciduous": 1, "allelopathic": 0 },
+        "walnut": { "growth_rate": 0.8, "moisture_need": 35.0, "light_need": 0.6, "ph_min": 5.0, "ph_max": 7.5, "max_hp": 180.0, "needs_pollinator": 0, "needs_mycorrhiza": 0, "is_deciduous": 1, "allelopathic": 1 }
       }
     },
     {
@@ -292,8 +470,26 @@
         "nutrient": {
           "grass":  { "transfer_rate": 1.0 },
           "tree":   { "transfer_rate": 2.0 },
-          "orchid": { "transfer_rate": 3.0 }
+          "orchid": { "transfer_rate": 3.0 },
+          "walnut": { "transfer_rate": 1.5 }
         }
+      }
+    },
+    {
+      "name": "season_params",
+      "entries": {
+        "spring": { "photosynthesis_mod": 0.8, "growth_mod": 1.0, "network_activity": 0.9, "deciduous_carbon": 0.2 },
+        "summer": { "photosynthesis_mod": 1.0, "growth_mod": 1.2, "network_activity": 1.0, "deciduous_carbon": 1.0 },
+        "autumn": { "photosynthesis_mod": 0.6, "growth_mod": 0.5, "network_activity": 0.8, "deciduous_carbon": 0.5 },
+        "winter": { "photosynthesis_mod": 0.0, "growth_mod": 0.0, "network_activity": 0.2, "deciduous_carbon": 0.0 }
+      }
+    },
+    {
+      "name": "stress_thresholds",
+      "entries": {
+        "mutualistic":  { "min_carbon_ratio": 0.3, "max_stress": 50.0 },
+        "commensal":    { "min_carbon_ratio": 0.1, "max_stress": 80.0 },
+        "parasitic":    { "min_carbon_ratio": 0.0, "max_stress": 100.0 }
       }
     }
   ],
