@@ -115,14 +115,6 @@ jobs:
           mkdir -p demos/mycelia/MyceliaUnity/Assets/Plugins/x86_64
           cp target/release/libweaven_unity.so demos/mycelia/MyceliaUnity/Assets/Plugins/x86_64/
 
-      - name: Copy C# adapter files to Unity
-        run: |
-          mkdir -p demos/mycelia/MyceliaUnity/Assets/Scripts/Weaven
-          cp weaven-unity/cs/Weaven/WeavenWorld.cs demos/mycelia/MyceliaUnity/Assets/Scripts/Weaven/
-          cp weaven-unity/cs/Weaven/WeavenNative.cs demos/mycelia/MyceliaUnity/Assets/Scripts/Weaven/
-          cp generated/cs/Models.cs demos/mycelia/MyceliaUnity/Assets/Scripts/Weaven/
-          cp generated/cs/Validators.cs demos/mycelia/MyceliaUnity/Assets/Scripts/Weaven/
-
       - name: Run Unity EditMode tests
         uses: game-ci/unity-test-runner@v4
         env:

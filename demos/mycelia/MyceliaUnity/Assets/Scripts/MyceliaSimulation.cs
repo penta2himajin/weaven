@@ -183,8 +183,6 @@ public class MyceliaSimulation : MonoBehaviour
             // Check orchid bloom win condition
             if (smId == 1 && change.Next == 4)
             {
-                int? needsMycorrhiza = null;
-                // If this was the orchid, we won!
                 OrchidBloomed = true;
                 Debug.Log("[Mycelia] *** MOONLIGHT ORCHID BLOOMED — YOU WIN! ***");
             }
