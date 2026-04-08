@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  serializedVersion: 24
+  productGUID: 8a2f8c3d4e5f6a7b8c9d0e1f2a3b4c5d
+  AndroidProfiler: 0
+  AndroidFilterTouchesWhenObscured: 0
+  defaultScreenWidth: 1920
+  defaultScreenHeight: 1080
+  defaultScreenWidthWeb: 960
+  defaultScreenHeightWeb: 600
+  m_StereoRenderingPath: 0
+  m_ActiveColorSpace: 0
+  m_SpritePacking: 1
+  m_MTRendering: 1
+  mipStripping: 0
+  stripEngineCode: 1
+  defaultIsNativeResolution: 1
+  macRetinaSupport: 1
+  runInBackground: 1
+  captureSingleScreen: 0
+  muteOtherAudioSources: 0
+  productName: Mycelia
+  companyName: Weaven
+  cloudProjectId:
+  framebufferDepthMemorylessMode: 0
+  projectId:
+  resizableWindow: 0
+  useOnDemandResources: 0
+  useAnimatedAutorotation: 1
+  m_ColorGamuts: 00000000
+  targetDevice: 2
+  defaultCursor: {fileID: 0}
+  cursorHotspot: {x: 0, y: 0}
+  accelerometerFrequency: 60
+  companyName: Weaven
+  productName: Mycelia
+  defaultCursor: {fileID: 0}
+  cursorHotspot: {x: 0, y: 0}
+  defaultScreenOrientation: 4
+  useOSAutorotation: 1
+  use32BitDisplayBuffer: 1
+  preserveFramebufferAlpha: 0
+  disableDepthAndStencilBuffers: 0
+  androidStartInFullscreen: 1
+  androidRenderOutsideSafeArea: 1
+  androidUseSwappy: 1
+  displayResolutionDialog: 0
+  resolutionDialogBanner: {fileID: 0}
+  m_BuildTargetBatching: []
+  m_BuildTargetShaderSettings: []
+  m_BuildTargetGraphicsJobs: []
+  m_BuildTargetGraphicsJobMode: []
+  m_BuildTargetGraphicsAPIs: []
+  openGLRequireES31: 0
+  openGLRequireES31AEP: 0
+  openGLRequireES32: 0
+  m_TemplateCustomTags: {}
+  mobileMTRendering:
+    Android: 1
+    iPhone: 1
+    tvOS: 1
+  vulkanNumSwapchainBuffers: 3
+  vulkanEnableSetSRGBWrite: 0
+  vulkanEnableLateAcquireNextImage: 0
+  vulkanEnableCommandBufferRecycling: 1
+  m_StackTraceTypes: 010000000100000001000000010000000100000001000000
+  iosShowActivityIndicatorOnLoading: -1
+  androidShowActivityIndicatorOnLoading: -1
+  displayResolutionDialog: 0
+  allowedAutorotateToPortrait: 1
+  allowedAutorotateToPortraitUpsideDown: 1
+  allowedAutorotateToLandscapeRight: 1
+  allowedAutorotateToLandscapeLeft: 1
+  useOSAutorotation: 1
+  use32BitDisplayBuffer: 1
+  disableDepthAndStencilBuffers: 0
+  allowFullscreenSwitch: 1
+  fullscreenMode: 1
+  graphicsJobMode: 0
+  macFullscreenMode: 2
+  d3d9FullscreenMode: 1
+  d3d11FullscreenMode: 1
+  visibleInBackground: 1
+  gcIncremental: 1
+  scriptingDefineSymbols: {}
+  additionalCompilerArguments: {}
+  platformArchitecture: {}
+  scriptingBackend:
+    Standalone: 1
+  il2cppCompilerConfiguration: {}
+  il2cppCodeGeneration: {}
+  managedStrippingLevel:
+    Standalone: 1
+  incrementalIl2cppBuild: {}
+  suppressCommonWarnings: 1
+  allowUnsafeCode: 1
+  apiCompatibilityLevelPerPlatform:
+    Standalone: 3
+  activeInputHandler: 2
