@@ -135,7 +135,7 @@ jobs:
           projectPath: demos/mycelia/MyceliaUnity
           unityVersion: 6000.3.12f1
           targetPlatform: StandaloneLinux64
-          buildMethod: ""
+          allowDirtyBuild: true
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
