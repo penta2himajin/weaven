@@ -17,17 +17,12 @@ permissions:
   checks: write
 
 on:
-  push:
-    paths:
-      - 'weaven-core/**'
-      - 'weaven-unity/**'
-      - 'demos/mycelia/**'
-      - '.github/workflows/mycelia.yml'
   pull_request:
     paths:
       - 'weaven-core/**'
       - 'weaven-unity/**'
       - 'demos/mycelia/**'
+      - '.github/workflows/mycelia.yml'
 
 jobs:
   # ── Layer 1: Rust tests ──────────────────────────────────────────
