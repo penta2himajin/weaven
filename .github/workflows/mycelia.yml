@@ -124,6 +124,9 @@ jobs:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           testMode: EditMode
           checkName: "Unity EditMode Tests"
+          # Use base image (smaller than il2cpp) for faster pull
+          containerRegistryRepository: unityci/editor
+          customImage: unityci/editor:ubuntu-6000.3.12f1-base-3
 
       - name: Build StandaloneLinux64
         uses: game-ci/unity-builder@v4
@@ -136,6 +139,8 @@ jobs:
           unityVersion: 6000.3.12f1
           targetPlatform: StandaloneLinux64
           allowDirtyBuild: true
+          # Use base image — Mono backend is sufficient for demo
+          customImage: unityci/editor:ubuntu-6000.3.12f1-base-3
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
