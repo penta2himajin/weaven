@@ -19,8 +19,6 @@ permissions:
 on:
   push:
     paths:
-      - 'weaven-core/**'
-      - 'weaven-unity/**'
       - 'demos/mycelia/**'
       - '.github/workflows/mycelia.yml'
 

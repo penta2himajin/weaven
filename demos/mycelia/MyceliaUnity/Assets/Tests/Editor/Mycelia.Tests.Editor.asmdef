@@ -1,12 +1,14 @@
 {
     "name": "Mycelia.Tests.Editor",
     "rootNamespace": "Mycelia.Tests",
-    "references": [],
+    "references": [
+        "Mycelia.Runtime"
+    ],
     "includePlatforms": [
         "Editor"
     ],
     "excludePlatforms": [],
-    "allowUnsafeCode": false,
+    "allowUnsafeCode": true,
     "overrideReferences": true,
     "precompiledReferences": [
         "nunit.framework.dll"
